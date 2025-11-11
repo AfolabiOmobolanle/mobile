@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "751500693118",
+    "project_id": "com-lbs-eko360",
+    "storage_bucket": "com-lbs-eko360.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:751500693118:android:8543ae0a985ea5f488922f",
+        "android_client_info": {
+          "package_name": "com.lbseko360"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyAn3gZHzRfsM_SSvNKYOlcjSLxSIjqmNrU"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
