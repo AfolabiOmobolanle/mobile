@@ -1,0 +1,43 @@
+node_modules/
+
+# @generated expo-cli
+expo-env.d.ts
+# @end expo-cli
+
+# Expo
+.expo/
+.expo-shared/
+
+# Logs
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Metro / Bundler
+*.pack
+*.hpack
+
+# VSCode
+.vscode/
+
+# OS
+.DS_Store
+
+# --- iOS ---
+ios/build/
+ios/Pods/
+ios/DerivedData/
+*.xcworkspace
+
+# --- Android ---
+android/.gradle/
+android/app/build/
+android/local.properties
+android/*.iml
+android/captures/
+
+# Ignore generated launcher icons, splash, drawables
+android/app/src/main/res/mipmap-*/
+android/app/src/main/res/drawable-*
+android/app/src/main/res/drawable*/
+/android/
