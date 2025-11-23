@@ -47,65 +47,63 @@ const SubmissionScreen = ({ navigation }) => {
     );
   };
 
-  const handleSubmit = async (draft: any, index: number) => {
-    setIsLoading(true);
-    try {
-      const data = new FormData();
+ const handleSubmit = async (draft: any, index: number) => {
+  setIsLoading(true);
+  try {
+    const data = new FormData();
 
-      data.append("surveyId", draft[0]["surveyId"]);
-      data.append("name", draft[0]["name"]);
-      data.append("responses", draft[0]?.responses);
+    data.append("surveyId", draft[0]["surveyId"]);
+    data.append("name", draft[0]["name"]);
+    data.append("responses", draft[0]?.responses);
 
-      for (let a = 0; a < draft[0]?.fileFields?.length; a++) {
-        if (draft[0]?.fileFields[a]?.value) {
-          for (let i = 0; i < draft[0]?.fileFields[a]?.value.length; i++) {
-            // console.log("first", draft[0]?.fileFields[a]?.value[i]);
-            data.append("file", {
-              type: draft[0]?.fileFields[a]?.value[i]?.mimeType,
-              name: draft[0]?.fileFields[a]?.value[i]?.name,
-              uri: draft[0]?.fileFields[a]?.value[i]?.uri,
-            });
-            // data.append("file", draft[0]?.fileFields[a]?.value[i]);
-          }
+    for (let a = 0; a < draft[0]?.fileFields?.length; a++) {
+      const files = draft[0]?.fileFields[a]?.value || [];
+      for (let i = 0; i < files.length; i++) {
+        const file = files[i];
+        if (file?.uri) {
+          data.append("file", {
+            uri: file.uri.startsWith("file://") ? file.uri : "file://" + file.uri,
+            type: file.mimeType || "application/octet-stream",
+            name: file.name || `file-${i}`,
+          } as any); // cast for TS
         }
       }
-
-      let response = await fetch(
-        `https://core.eko360.ng/api/v1/data_collector/survey_response/create`,
-        {
-          method: "POST",
-          body: data,
-          headers: {
-            Authorization: token,
-            Accept: "application/json",
-            "Content-Type": "multipart/form-data",
-          },
-        }
-      );
-      response = await response.json();
-      console.log(response, "--------");
-      setIsLoading(false);
-
-      if (response?.data?.message !== "Survey Response created successfully") {
-        //remove from draft
-        const result = drafts?.filter((item, inde) => inde !== index);
-        await localStorage.removeItem("surveyDraft");
-        setDrafts([...result]);
-        await localStorage.setItem("surveyDraft", result);
-        Alert.alert("Successful", "Draft submitted submitted successfully");
-      } else {
-        const errorMessage = response?.data
-          ? typeof response?.data?.message === "string"
-            ? response?.data?.message
-            : "Unable to submit response at this time"
-          : null;
-        Alert.alert("Error", errorMessage);
-      }
-    } catch (e) {
-      setIsLoading(false);
-      console.log("error ON UPLOAD", e);
     }
-  };
+
+    let response = await fetch(
+      `https://core.eko360.ng/api/v1/data_collector/survey_response/create`,
+      {
+        method: "POST",
+        headers: {
+          Authorization: token,
+          Accept: "application/json",
+          // Don't set Content-Type manually
+        },
+        body: data,
+      }
+    );
+
+    response = await response.json();
+    setIsLoading(false);
+    console.log(response, "--------");
+
+    if (response?.data?.message === "Survey Response created successfully") {
+      Alert.alert("Success", "Survey submitted successfully");
+      const updatedDrafts = drafts.filter((_, inde) => inde !== index);
+      await localStorage.removeItem("surveyDraft");
+      await localStorage.setItem("surveyDraft", updatedDrafts);
+      setDrafts(updatedDrafts);
+    } else {
+      const errorMessage =
+        response?.data?.message || "Unable to submit response at this time";
+      Alert.alert("Error", errorMessage);
+    }
+  } catch (e) {
+    setIsLoading(false);
+    console.log("error ON UPLOAD", e);
+    Alert.alert("Error", "Failed to submit survey");
+  }
+};
 
   return (
     <SafeAreaView style={screenStyle}>

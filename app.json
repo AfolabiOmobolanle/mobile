@@ -27,13 +27,6 @@
         "android.permission.RECORD_AUDIO"
       ],
       "package": "com.lbseko360",
-      "notification": {
-        "icon": "./assets/images/icon.png",
-        "color": "#07A0AB",
-        "sound": true,
-        "priority": "max",
-        "sticky": false
-      },
       "googleServicesFile": "./google-services.json"
     },
     "web": {

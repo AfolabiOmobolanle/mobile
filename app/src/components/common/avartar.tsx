@@ -1,12 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { View, StyleSheet, Text, Image } from "react-native";
-import {
-  Menu,
-  MenuOptions,
-  MenuOption,
-  MenuTrigger,
-} from "react-native-popup-menu";
-import { generateSecureRandom } from "react-native-securerandom";
+import { Menu, MenuOptions, MenuOption, MenuTrigger } from "react-native-popup-menu";
 
 import { useStyleConfig } from "../../services/styles";
 import font from "../../config/font";
@@ -29,7 +23,8 @@ const getStyles = ({ fontSize, theme }) =>
     },
     avatarInitial: {
       color: theme.backgroundDefault,
-      fontSize: 30,
+      fontSize: 20,
+      fontWeight: "bold",
     },
     menu: {
       backgroundColor: theme.backgroundDefault,
@@ -44,84 +39,78 @@ const getStyles = ({ fontSize, theme }) =>
       paddingLeft: 10,
     },
     userTitle: {
-      fontSize: fontSize.p1,
+      fontSize: font.p1,
       fontFamily: font.bold,
       color: theme.textDefault,
       textAlign: "left",
     },
     userText: {
-      fontSize: fontSize.p2,
+      fontSize: font.p2,
       color: theme.textSub,
       fontFamily: font.regular,
     },
     option: {
       fontFamily: font.regular,
       color: theme.textDefault,
-      fontSize: fontSize.p1,
+      fontSize: font.p1,
       marginBottom: 15,
     },
   });
 
+// Avatar image or initials
 const AvartarImage = ({ image, initial }) => {
   const styles = useStyleConfig(getStyles);
-  const [randomColor, setRandomColor] = useState<string>("rgb(1, 244, 116)");
-
-  const getColour = async () => {
-    let randomBytes = await generateSecureRandom(3);
-    setRandomColor(
-      `rgb(${randomBytes[0]}, ${randomBytes[1]}, ${randomBytes[2]})`
-    );
-  };
+  const [randomColor, setRandomColor] = useState("rgb(1, 244, 116)");
 
   useEffect(() => {
-    getColour();
+    // Generate a random color using JS
+    const r = Math.floor(Math.random() * 256);
+    const g = Math.floor(Math.random() * 256);
+    const b = Math.floor(Math.random() * 256);
+    setRandomColor(`rgb(${r}, ${g}, ${b})`);
   }, []);
+
   return (
     <View style={[styles.avartar, { backgroundColor: randomColor }]}>
       {image ? (
-        <Image
-          source={{
-            uri: image,
-          }}
-          style={styles.avartarImage}
-          resizeMode="cover"
-        />
+        <Image source={{ uri: image }} style={styles.avartarImage} resizeMode="cover" />
       ) : (
-        <Text style={styles.avatarInitial}>{initial}</Text>
+        <Text style={styles.avatarInitial}>{initial || "U"}</Text>
       )}
     </View>
   );
 };
 
+// User row with name & email
 const User = ({ user = {} }) => {
   const styles = useStyleConfig(getStyles);
-  const image = user ? user.image_url : null;
+  const image = user?.image_url || null;
+  const initial = user?.full_name?.[0] || "U";
 
   return (
     <View style={styles.userRow}>
-      <AvartarImage image={image} initial={user.full_name[0]} />
+      <AvartarImage image={image} initial={initial} />
       <View style={styles.userTextWapper}>
-        <Text style={styles.userTitle}>Hi {user.full_name}</Text>
-        <Text style={styles.userText}>{user.email}</Text>
+        <Text style={styles.userTitle}>Hi {user?.full_name || "User"}</Text>
+        <Text style={styles.userText}>{user?.email || "No email"}</Text>
       </View>
     </View>
   );
 };
 
+// Main Avatar component with menu
 const Avartar = ({ onProfileClick, onSettingClick }) => {
   const styles = useStyleConfig(getStyles);
   const { auth } = useAuth();
-  const user = auth ? auth.user : {};
-  const image = user ? user.image_url : null;
+  const user = auth?.user || {};
+  const image = user?.image_url || null;
+  const initial = user?.full_name?.[0] || "U";
   const { logout } = useLogout();
 
   return (
     <Menu>
       <MenuTrigger>
-        <AvartarImage
-          image={image}
-          initial={user.full_name ? user.full_name[0] : ""}
-        />
+        <AvartarImage image={image} initial={initial} />
       </MenuTrigger>
       <MenuOptions
         customStyles={{

@@ -1,72 +1,65 @@
-import React, {
-  createContext,
-  useState,
-  ReactChild,
-  useContext,
-  useEffect,
-  useCallback,
-  useRef,
-} from "react";
+import React, { createContext, useState, ReactNode, useContext, useEffect, useCallback } from "react";
 import * as SecureStore from "expo-secure-store";
-
 import { getFontSize } from "../config/font";
 import { useMountState } from "./mounted";
 
-//persist storage key
-const fontStorageKey = "@fontScale";
+const fontStorageKey = "font_scale"; // ✅ valid key
 
-const fontContext = createContext({
+interface FontContextType {
+  fontScale: string;
+  setFontScale: (scale: string) => void;
+}
+
+const FontContext = createContext<FontContextType>({
   fontScale: "medium",
-  setFontScale: (scale: string) => {},
+  setFontScale: () => {},
 });
 
 interface FontScaleProviderProps {
-  children: ReactChild;
+  children: ReactNode;
 }
+
 const FontScaleProvider: React.FC<FontScaleProviderProps> = ({ children }) => {
   const [fontScale, setFontScale] = useState("medium");
   const mounted = useMountState();
 
-  //set font scale in storage
-  const setPersistedFontScale = useCallback(async () => {
-    const persistedFontScale =
-      (await SecureStore.getItemAsync(fontStorageKey)) || "medium";
-
-    if (mounted) {
-      setFontScale(persistedFontScale);
-    }
-  }, [mounted, setFontScale]);
-  useEffect(() => {
-    setPersistedFontScale();
-  }, [setPersistedFontScale]);
-
-  const persistFontScale = async () => {
+  const loadFontScale = useCallback(async () => {
     try {
-      await SecureStore.setItemAsync(fontStorageKey, fontScale);
+      const storedScale = await SecureStore.getItemAsync(fontStorageKey);
+      if (storedScale && mounted) setFontScale(storedScale);
     } catch (error) {
-      console.log(error, "Font scale");
+      console.log("Error reading font scale from storage:", error);
     }
-  };
+  }, [mounted]);
 
-  //update font scale in storage
   useEffect(() => {
-    persistFontScale();
-  }, [fontScale, fontStorageKey]);
+    loadFontScale();
+  }, [loadFontScale]);
+
+  useEffect(() => {
+    const saveFontScale = async () => {
+      try {
+        await SecureStore.setItemAsync(fontStorageKey, fontScale);
+      } catch (error) {
+        console.log("Error saving font scale:", error);
+      }
+    };
+    saveFontScale();
+  }, [fontScale]);
 
   return (
-    <fontContext.Provider value={{ fontScale, setFontScale }}>
+    <FontContext.Provider value={{ fontScale, setFontScale }}>
       {children}
-    </fontContext.Provider>
+    </FontContext.Provider>
   );
 };
 
 export const useFont = () => {
-  const { fontScale, setFontScale } = useContext(fontContext);
-
+  const context = useContext(FontContext);
   return {
-    fontScale,
-    setFontScale,
-    fontSize: getFontSize(fontScale),
+    fontScale: context.fontScale,
+    setFontScale: context.setFontScale,
+    fontSize: getFontSize(context.fontScale),
   };
 };
 

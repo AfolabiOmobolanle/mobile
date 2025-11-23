@@ -1,58 +1,55 @@
-import Constants from "expo-constants";
-import * as Notifications from "expo-notifications";
-import { Alert, Platform } from "react-native";
+import { Platform } from "react-native";
 import * as Device from "expo-device";
 
-export const registerDeviceForNotification = async () => {
-  let token;
-  if (!Device.isDevice) {
-    // const { status: existingStatus } = await Permissions.getAsync(
-    //   Permissions.NOTIFICATIONS
-    // );
-    // let finalStatus = existingStatus;
-    // if (existingStatus !== "granted") {
-    //   const { status } = await Permissions.askAsync(Permissions.NOTIFICATIONS);
-    //   finalStatus = status;
-    // }
-    // if (finalStatus !== "granted") {
-    //   alert("Failed to get push token for push notification!");
-    //   return;
-    // }
-    // token = (await Notifications.getExpoPushTokenAsync()).data;
+// Conditionally import expo-notifications only on real devices
+let Notifications: typeof import("expo-notifications") | null = null;
+if (Device.isDevice) {
+  Notifications = require("expo-notifications");
+}
 
-    const { status: existingStatus } =
-      await Notifications.getPermissionsAsync();
+/**
+ * Configure the global notification handler
+ */
+export const configureNotificationHandler = () => {
+  if (!Notifications) return;
+
+  Notifications.setNotificationHandler({
+    handleNotification: async () => ({
+      shouldShowAlert: true,
+      shouldPlaySound: true,
+      shouldSetBadge: false,
+    }),
+  });
+};
+
+/**
+ * Register device for push notifications and get the Expo push token
+ */
+export const registerDeviceForNotification = async (): Promise<string | null> => {
+  if (!Notifications || !Device.isDevice) return null;
+
+  try {
+    const { status: existingStatus } = await Notifications.getPermissionsAsync();
     let finalStatus = existingStatus;
+
     if (existingStatus !== "granted") {
       const { status } = await Notifications.requestPermissionsAsync();
       finalStatus = status;
     }
+
     if (finalStatus !== "granted") {
-      alert("Failed to get push token for push notification!");
-      return;
+      console.log("Push notification permission denied");
+      return null;
     }
 
-    token = (
-      await Notifications.getExpoPushTokenAsync({
-        projectId: "com-lbs-eko360",
-      })
-    ).data;
-
-    Alert.alert("token..", token);
-    console.log(token);
-    console.log(token, "token is here");
-  } else {
-    // alert("Must use physical device for Push Notifications");
-  }
-
-  if (Platform.OS === "android") {
-    Notifications.setNotificationChannelAsync("default", {
-      name: "default",
-      importance: Notifications.AndroidImportance.MAX,
-      vibrationPattern: [0, 250, 250, 250],
-      lightColor: "#FF231F7C",
+    const tokenResult = await Notifications.getExpoPushTokenAsync({
+      // Use your EAS project ID if needed
+      projectId: Platform.OS === "ios" ? undefined : "YOUR_PROJECT_ID_HERE",
     });
-  }
 
-  return token;
+    return tokenResult.data;
+  } catch (err) {
+    console.log("Error registering for notifications:", err);
+    return null;
+  }
 };

@@ -3,74 +3,78 @@ import React, {
   createContext,
   useState,
   useCallback,
-  ReactChild,
+  ReactNode,
   useEffect,
-  useRef,
 } from "react";
 import * as SecureStore from "expo-secure-store";
-
 import { getThemeConfig } from "../config/theme";
 import { useMountState } from "./mounted";
 
 const themeScheme = ["light", "dark"];
-const themeStorageKey = "@theme";
+const themeStorageKey = "theme"; // ✅ valid key
 
-const themeContext = createContext({
+interface ThemeContextType {
+  theme: string;
+  setTheme: (value: string) => void;
+  toggleTheme: () => void;
+}
+
+const ThemeContext = createContext<ThemeContextType>({
   theme: themeScheme[0],
-  setTheme: (value: string) => {},
+  setTheme: () => {},
   toggleTheme: () => {},
 });
 
-interface ThemeProviderPropTypes {
-  children: ReactChild;
+interface ThemeProviderProps {
+  children: ReactNode;
 }
-export const ThemeProvider = ({ children }: ThemeProviderPropTypes) => {
-  const [theme, setTheme] = useState(themeScheme[0]);
-  const toggleTheme = useCallback(
-    () =>
-      setTheme((prevTheme) =>
-        prevTheme === themeScheme[0] ? themeScheme[1] : themeScheme[0]
-      ),
-    []
-  );
 
-  //set theme in storage
+export const ThemeProvider = ({ children }: ThemeProviderProps) => {
+  const [theme, setTheme] = useState<string>(themeScheme[0]);
   const mounted = useMountState();
-  const setPersistedTheme = useCallback(async () => {
-    const persistedTheme =
-      (await SecureStore.getItemAsync(themeStorageKey)) || "light";
-    if (mounted) {
-      setTheme(persistedTheme);
+
+  const toggleTheme = useCallback(() => {
+    setTheme((prev) => (prev === "light" ? "dark" : "light"));
+  }, []);
+
+  // Load persisted theme
+  const loadTheme = useCallback(async () => {
+    try {
+      const storedTheme = await SecureStore.getItemAsync(themeStorageKey);
+      if (storedTheme && mounted) setTheme(storedTheme);
+    } catch (error) {
+      console.log("Error reading theme from storage:", error);
     }
-  }, [mounted, setTheme]);
+  }, [mounted]);
 
   useEffect(() => {
-    setPersistedTheme();
-  }, [setPersistedTheme]);
+    loadTheme();
+  }, [loadTheme]);
 
-  const setThemeStore = async () => {
-    await SecureStore.setItemAsync(themeStorageKey, theme);
-  };
-
-  //update theme in storage
+  // Persist theme whenever it changes
   useEffect(() => {
-    setThemeStore();
-  }, [theme, themeStorageKey]);
+    const saveTheme = async () => {
+      try {
+        await SecureStore.setItemAsync(themeStorageKey, theme);
+      } catch (error) {
+        console.log("Error saving theme:", error);
+      }
+    };
+    saveTheme();
+  }, [theme]);
 
   return (
-    <themeContext.Provider value={{ theme, setTheme, toggleTheme }}>
+    <ThemeContext.Provider value={{ theme, setTheme, toggleTheme }}>
       {children}
-    </themeContext.Provider>
+    </ThemeContext.Provider>
   );
 };
 
 export const useTheme = () => {
-  const { theme, ...themeControllers } = useContext(themeContext);
-
+  const context = useContext(ThemeContext);
   return {
-    ...themeControllers,
-    isDarkMode: theme === "dark",
-    theme,
-    themeConfig: getThemeConfig(theme),
+    ...context,
+    isDarkMode: context.theme === "dark",
+    themeConfig: getThemeConfig(context.theme),
   };
 };

@@ -1,15 +1,15 @@
-import React, { useCallback, useEffect } from "react";
+import React, { useCallback } from "react";
 import { View, StyleSheet, Platform, KeyboardAvoidingView } from "react-native";
 import SignInCard from "../../components/landing/signInCard";
 import { useStyleConfig } from "../../services/styles";
 import { StackNavigationProp } from "@react-navigation/stack";
 import { LandingStackParamList } from "../../navigations/LandingNavigation";
+import { useAuth } from "../../services/auth";
 
 const getStyle = ({ theme }) =>
   StyleSheet.create({
     signInScreenStyle: {
       backgroundColor: theme.backgroundDefault,
-      // paddingVertical: 20,
       flex: 1,
       justifyContent: "center",
     },
@@ -18,19 +18,28 @@ const getStyle = ({ theme }) =>
 interface SigninScreenProps {
   navigation: StackNavigationProp<LandingStackParamList, "SignIn">;
 }
+
 const SigninScreen = ({ navigation }: SigninScreenProps) => {
   const { signInScreenStyle } = useStyleConfig(getStyle);
+  const { setAuth } = useAuth(); // ✅ get auth setter
 
-  const handleLoginSuccess = useCallback(() => navigation.navigate("main"), []);
+  // Instead of navigating, just update auth
+  const handleLoginSuccess = useCallback(
+    (loginResponse: any) => {
+      setAuth(loginResponse); // This will trigger AppNavigation to show "main"
+    },
+    [setAuth]
+  );
+
   const handleForgotPassword = useCallback(
     () => navigation.navigate("Forgot Password"),
-    []
+    [navigation]
   );
 
   return (
     <KeyboardAvoidingView
       style={signInScreenStyle}
-      behavior={Platform.OS == "ios" ? "padding" : "height"}
+      behavior={Platform.OS === "ios" ? "padding" : "height"}
     >
       <SignInCard
         onLoginSuccess={handleLoginSuccess}

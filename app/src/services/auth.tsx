@@ -7,7 +7,8 @@ import React, {
 } from "react";
 import * as SecureStore from "expo-secure-store";
 
-const authStorageKey = "@auth";
+const authStorageKey = "auth"; // ✅ valid key
+
 export const persistAuth = async (value: any) => {
   try {
     await SecureStore.setItemAsync(authStorageKey, JSON.stringify(value));
@@ -27,12 +28,10 @@ const clearPersistedAuth = async () => {
 const getPersistedAuth = async () => {
   try {
     const value = await SecureStore.getItemAsync(authStorageKey);
-
-    if (value !== undefined && value !== null) {
-      return JSON.parse(value);
-    }
+    return value ? JSON.parse(value) : null;
   } catch (error) {
     console.log(error, "error on storage read");
+    return null;
   }
 };
 
@@ -46,6 +45,7 @@ const authContext = createContext({
 interface IAuthProviderProps {
   children: ReactElement;
 }
+
 export const AuthProvider: React.FC<IAuthProviderProps> = ({ children }) => {
   const [auth, setAuth] = useState(null);
 

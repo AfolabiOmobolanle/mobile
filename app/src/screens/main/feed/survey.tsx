@@ -12,8 +12,10 @@ import moment from "moment";
 // import messaging from "@react-native-firebase/messaging";
 import { PermissionsAndroid } from "react-native";
 import * as Device from "expo-device";
-import * as Notifications from "expo-notifications";
-
+let Notifications: typeof import("expo-notifications") | null = null;
+if (Device.isDevice) {
+  Notifications = require("expo-notifications");
+}
 import { screenStyle } from "../../styles";
 import HeaderGroup from "../../../components/common/headerGroup";
 import SecondaryHeader from "../../../components/common/secondayHeader";
@@ -103,49 +105,52 @@ const SurveyScreen: React.FC<SurveyScreenProps> = ({ navigation }) => {
   //   return token;
   // }
 
-  async function registerForPushNotificationsAsync() {
-    let token: string | undefined;
 
-    if (Device.isDevice) {
-      console.log("hhhhh");
-      const { status: existingStatus } =
-        await Notifications.getPermissionsAsync();
-      let finalStatus = existingStatus;
+async function registerForPushNotificationsAsync() {
+  let token: string | undefined;
 
-      if (existingStatus !== "granted") {
-        console.log("Not granted.....");
-        const { status } = await Notifications.requestPermissionsAsync();
-        finalStatus = status;
-      }
-      console.log("Not granted.....", existingStatus);
-
-      if (finalStatus !== "granted") {
-        console.log("Failed to get push token permission");
-        return;
-      }
-      console.log("Permission status:", finalStatus);
-
-      const response = await Notifications.getExpoPushTokenAsync({
-        projectId: "com.lbseko360",
-      });
-      console.log(response, "response");
-      token = response.data;
-      console.log("Expo Push Token:n,,,", token);
-    } else {
-      console.log("Must use physical device for Push Notifications");
-    }
-
-    if (Platform.OS === "android") {
-      Notifications.setNotificationChannelAsync("default", {
-        name: "default",
-        importance: Notifications.AndroidImportance.MAX,
-        vibrationPattern: [0, 250, 250, 250],
-        lightColor: "#FF231F7C",
-      });
-    }
-
-    return token;
+  if (!Device.isDevice || !Notifications) {
+    console.log("Must use physical device for Push Notifications");
+    return;
   }
+
+  console.log("hhhhh");
+
+  const { status: existingStatus } = await Notifications.getPermissionsAsync();
+  let finalStatus = existingStatus;
+
+  if (existingStatus !== "granted") {
+    console.log("Not granted.....");
+    const { status } = await Notifications.requestPermissionsAsync();
+    finalStatus = status;
+  }
+  console.log("Not granted.....", existingStatus);
+
+  if (finalStatus !== "granted") {
+    console.log("Failed to get push token permission");
+    return;
+  }
+  console.log("Permission status:", finalStatus);
+
+  const response = await Notifications.getExpoPushTokenAsync({
+    projectId: "com.lbseko360",
+  });
+  console.log(response, "response");
+  token = response.data;
+  console.log("Expo Push Token:n,,,", token);
+
+  if (Platform.OS === "android" && Notifications) {
+    await Notifications.setNotificationChannelAsync("default", {
+      name: "default",
+      importance: Notifications.AndroidImportance.MAX,
+      vibrationPattern: [0, 250, 250, 250],
+      lightColor: "#FF231F7C",
+    });
+  }
+
+  return token;
+}
+
 
   const [expoPushToken, setExpoPushToken] = useState("");
   const [notification, setNotification] = useState(false);
@@ -176,31 +181,33 @@ const SurveyScreen: React.FC<SurveyScreenProps> = ({ navigation }) => {
     });
   }, [isFucused]);
 
-  useEffect(() => {
-    const subscription = Notifications.addNotificationReceivedListener(
-      (notification) => {
-        Alert.alert(
-          "New Notification",
-          "You have a new notification for the survey you submitted"
-        );
-        console.log("Notification received:", notification);
-      }
-    );
+useEffect(() => {
+  if (!Notifications) return;
 
-    const responseSubscription =
-      Notifications.addNotificationResponseReceivedListener((response) => {
-        Alert.alert(
-          "New Notification",
-          "You have a new notification for the survey you submitted"
-        );
-        console.log("Notification response:", response);
-      });
+  const subscription = Notifications.addNotificationReceivedListener(
+    (notification) => {
+      Alert.alert(
+        "New Notification",
+        "You have a new notification for the survey you submitted"
+      );
+      console.log("Notification received:", notification);
+    }
+  );
 
-    return () => {
-      subscription.remove();
-      responseSubscription.remove();
-    };
-  }, []);
+  const responseSubscription =
+    Notifications.addNotificationResponseReceivedListener((response) => {
+      Alert.alert(
+        "New Notification",
+        "You have a new notification for the survey you submitted"
+      );
+      console.log("Notification response:", response);
+    });
+
+  return () => {
+    subscription.remove();
+    responseSubscription.remove();
+  };
+}, []);
 
   const [{ loading: loadingSurvey, res: surveyResponse, error: surveyError }] =
     useApi({

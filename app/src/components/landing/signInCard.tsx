@@ -17,7 +17,10 @@ import {
   TouchableOpacity,
 } from "react-native";
 import * as Device from "expo-device";
-import * as Notifications from "expo-notifications";
+let Notifications: typeof import("expo-notifications") | null = null;
+if (Device.isDevice) {
+  Notifications = require("expo-notifications");
+}
 import Constants from "expo-constants";
 
 import { Checkbox } from "react-native-paper";
@@ -203,8 +206,10 @@ useEffect(() => {
 }, []);
 async function getExpoPushToken() {
   try {
-    // Only works on real devices
-    if (!Device.isDevice) return null;
+    if (!Device.isDevice || !Notifications) {
+      console.log("Push notifications not available on this device");
+      return null;
+    }
 
     // Get existing permissions
     const { status: existingStatus } = await Notifications.getPermissionsAsync();
@@ -221,9 +226,8 @@ async function getExpoPushToken() {
       return null;
     }
 
-    // Get Expo push token
     const tokenResult = await Notifications.getExpoPushTokenAsync({
-      projectId: Constants.expoConfig.extra.eas.projectId, 
+      projectId: Constants.expoConfig.extra.eas.projectId,
     });
 
     console.log("FCM Token:", tokenResult.data);
@@ -287,15 +291,16 @@ const onSubmit = async (data) => {
     if (!isDataCollector) return; 
 
     if (rememberMe) persistAuth(auth);
+
     const fcmToken = await getExpoPushToken();
     await storeFcmToken(auth, fcmToken);
+
     const otpVerified = await localStorage.getItem("otpVerified");
     console.log(otpVerified, "otpVerified");
 
     if (otpVerified === "Yes") {
-      setAuth(auth);
-      onLoginSuccess();
-      return;
+      setAuth(auth); // ✅ this alone triggers navigation
+      return; // remove onLoginSuccess()
     }
 
     let otpResponse = await fetch(
@@ -317,7 +322,7 @@ const onSubmit = async (data) => {
     if (otpResponse?.message === "Otp Code created successfully") {
       navigation.navigate("OTP", {
         auth,
-        onLoginSuccess,
+        onLoginSuccess, // only if OTP flow still needs it
         otpDetails: otpResponse?.data?.otpAuth_token,
       });
     }
@@ -326,6 +331,7 @@ const onSubmit = async (data) => {
     console.log("Login error:", e);
   }
 };
+
 
   // [rememberMe, setAuth, persistAuth, onLoginSuccess];
 
