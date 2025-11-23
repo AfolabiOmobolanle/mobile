@@ -3,7 +3,7 @@ import * as DocumentPicker from "expo-document-picker";
 import moment from "moment";
 import React, { useCallback, useState } from "react";
 import { Controller } from "react-hook-form";
-import { ScrollView, StyleSheet, Text, TextInput, View } from "react-native";
+import { ScrollView, StyleSheet, Text, TextInput, View,Image} from "react-native";
 import {
   TouchableOpacity,
   TouchableWithoutFeedback,
@@ -55,6 +55,7 @@ const getStyles = ({ theme, fontSize }) =>
       // height: 50,
       backgroundColor: "white",
     },
+    
     fileInputWrapper: {
       marginBottom: 20,
     },
@@ -475,51 +476,61 @@ export const FileInput = ({ label, value, onChange, error }) => {
   }, [onChange]);
 
   return (
-    <View style={styles.fileInputWrapper}>
-      <Text style={styles.label}>{label}</Text>
-      {value ? (
-        <View
-          style={{
-            flexDirection: "row",
-            flexWrap: "wrap",
-            ...styles.inputStyle,
+<View style={styles.fileInputWrapper}>
+  <Text style={styles.label}>{label}</Text>
+
+  <View style={[styles.inputStyle, { padding: 0 }]}>
+    
+    {!value ? (
+      <TouchableOpacity onPress={handlePress} style={{ padding: 15 }}>
+        <Text style={{ ...styles.fileInputText, opacity: 0.8 }}>
+          Click and Select File To Upload
+        </Text>
+      </TouchableOpacity>
+    ) : (
+      <>
+        {/* IMAGE PREVIEW */}
+        <TouchableOpacity onPress={handlePress}>
+          <Image
+            source={{ uri: value.uri || value?.[0]?.uri }}
+            style={{
+              width: "100%",
+              height: 180,
+              borderRadius: 8,
+            }}
+            resizeMode="cover"
+          />
+        </TouchableOpacity>
+
+        {/* REMOVE BUTTON BELOW IMAGE */}
+        <TouchableOpacity
+          onPress={() => onChange(null)}
+          style={{ 
+            marginTop: 10,
+            alignSelf: "flex-end",
+            paddingVertical: 4,
+            paddingHorizontal: 8,
           }}
         >
-          <TouchableOpacity onPress={handlePress}>
-            <Text style={styles.fileInputText}>
-              {valueIsString ? value : value.name}
-            </Text>
-          </TouchableOpacity>
-          <TouchableOpacity onPress={() => onChange(null)}>
-            <Text
-              style={{
-                ...styles.fileInputText,
-                opacity: 0.8,
-                textDecorationLine: "underline",
-                marginLeft: 10,
-              }}
-            >
-              Remove
-            </Text>
-          </TouchableOpacity>
-        </View>
-      ) : (
-        <TouchableOpacity onPress={handlePress}>
-          <View
+          <Text
             style={{
-              flexDirection: "row",
-              flexWrap: "wrap",
-              ...styles.inputStyle,
+              color: "#d00",
+              fontWeight: "600",
+              textDecorationLine: "underline",
             }}
           >
-            <Text style={{ ...styles.fileInputText, opacity: 0.8 }}>
-              Click and Select file To Upload
-            </Text>
-          </View>
+            Remove
+          </Text>
         </TouchableOpacity>
-      )}
-      <Text style={styles.inputFieldError}>{error && error.message}</Text>
-    </View>
+      </>
+    )}
+
+  </View>
+
+  <Text style={styles.inputFieldError}>{error && error.message}</Text>
+</View>
+
+
   );
 };
 

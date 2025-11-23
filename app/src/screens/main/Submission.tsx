@@ -1,4 +1,3 @@
-import { createMaterialTopTabNavigator } from "@react-navigation/material-top-tabs";
 import React, { useCallback, useState } from "react";
 import {
   Alert,
@@ -21,7 +20,6 @@ import { useAuth } from "../../services/auth";
 import localStorage from "../../services/storage";
 // import UserInactivity from "react-native-user-inactivity";
 
-const tab = createMaterialTopTabNavigator();
 
 const SubmissionScreen = ({ navigation }) => {
   // const { active, setActive, timer } = useContext(UserActivityContext);

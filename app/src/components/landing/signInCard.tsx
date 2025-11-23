@@ -198,64 +198,135 @@ const SignInCard: React.FC<SignInCardProps> = ({
   const loader = useScreenLoader();
   const { setAuth, persistAuth } = useAuth();
 
-  loader.hide();
+useEffect(() => {
+  loader.hide();   
+}, []);
+async function getExpoPushToken() {
+  try {
+    // Only works on real devices
+    if (!Device.isDevice) return null;
 
-  const onSubmit = async (data) => {
-    console.log(data, "---", error);
-    loader.show();
+    // Get existing permissions
+    const { status: existingStatus } = await Notifications.getPermissionsAsync();
+    let finalStatus = existingStatus;
+
+    // Request permission if not already granted
+    if (existingStatus !== "granted") {
+      const { status } = await Notifications.requestPermissionsAsync();
+      finalStatus = status;
+    }
+
+    if (finalStatus !== "granted") {
+      console.log("Push notification permission denied");
+      return null;
+    }
+
+    // Get Expo push token
+    const tokenResult = await Notifications.getExpoPushTokenAsync({
+      projectId: Constants.expoConfig.extra.eas.projectId, 
+    });
+
+    console.log("FCM Token:", tokenResult.data);
+    return tokenResult.data;
+  } catch (err) {
+    console.log("Error getting push token:", err);
+    return null;
+  }
+}
+
+// Function to store push token in backend
+async function storeFcmToken(auth, fcmToken) {
+  try {
+    if (!auth?.token || !fcmToken) return;
+
+    const deviceId =
+      Device.osInternalBuildId || Device.androidId || Constants.installationId || "unknown";
+    const deviceName = Device.deviceName || Device.modelName || "unknown";
+    const deviceType = Platform.OS === "ios" ? "Ios" : "Android";
+
+    const response = await fetch(
+      "https://core.eko360.ng/api/v1/data_collector/firebase/store-token",
+      {
+        method: "POST",
+        headers: {
+          Authorization: auth.token,
+          Accept: "application/json",
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          fcmToken,
+          deviceId,
+          deviceName,
+          deviceType,
+        }),
+      }
+    );
+
+    const json = await response.json().catch(() => null);
+    console.log("store-token response:", response.status, json);
+  } catch (storeErr) {
+    console.log("Error storing FCM token:", storeErr);
+  }
+}
+
+const onSubmit = async (data) => {
+  console.log(data, "---", error);
+  loader.show();
+
+  try {
     const res = await login(data);
     loader.hide();
-
     console.log(res, "----Login Response");
 
-    if (res?.ok) {
-      const auth = res.data.data || {};
-      const role = (auth.user ? auth.user.role : null) || {};
-      const isDataCollector = role.slug === "data-collector";
+    if (!res?.ok) return;
 
-      if (isDataCollector) {
-        if (rememberMe) {
-          persistAuth(auth);
-        }
+    const auth = res.data.data || {};
+    const role = (auth.user ? auth.user.role : null) || {};
+    const isDataCollector = role.slug === "data-collector";
 
-        const otpVerified = await localStorage.getItem("otpVerified");
-        console.log(otpVerified, "otpVerified");
-        if (otpVerified && otpVerified == "Yes") {
-          setAuth(auth);
-          onLoginSuccess();
-        } else {
-          let response = await fetch(
-            `https://core.eko360.ng/api/v1/otpAuth/generateToken`,
-            {
-              method: "post",
-              body: JSON.stringify({ id: auth?.user?.id }),
-              headers: {
-                Authorization: auth?.token,
-                Accept: "application/json",
-                "Content-Type": "application/json",
-              },
-            }
-          );
-          response = await response.json();
-          console.log(response?.data?.otpAuth_token, "OTP response is here");
+    if (!isDataCollector) return; 
 
-          if (response?.message == "Otp Code created successfully") {
-            navigation.navigate("OTP", {
-              auth,
-              onLoginSuccess,
-              otpDetails: response?.data?.otpAuth_token,
-            });
-          }
-        }
+    if (rememberMe) persistAuth(auth);
+    const fcmToken = await getExpoPushToken();
+    await storeFcmToken(auth, fcmToken);
+    const otpVerified = await localStorage.getItem("otpVerified");
+    console.log(otpVerified, "otpVerified");
 
-        // setAuth(auth);
-        // onLoginSuccess();
-
-        // setActive(true);
-      }
+    if (otpVerified === "Yes") {
+      setAuth(auth);
+      onLoginSuccess();
       return;
     }
-  };
+
+    let otpResponse = await fetch(
+      `https://core.eko360.ng/api/v1/otpAuth/generateToken`,
+      {
+        method: "POST",
+        headers: {
+          Authorization: auth.token,
+          Accept: "application/json",
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ id: auth?.user?.id }),
+      }
+    );
+
+    otpResponse = await otpResponse.json();
+    console.log(otpResponse?.data?.otpAuth_token, "OTP response is here");
+
+    if (otpResponse?.message === "Otp Code created successfully") {
+      navigation.navigate("OTP", {
+        auth,
+        onLoginSuccess,
+        otpDetails: otpResponse?.data?.otpAuth_token,
+      });
+    }
+  } catch (e) {
+    loader.hide();
+    console.log("Login error:", e);
+  }
+};
+
   // [rememberMe, setAuth, persistAuth, onLoginSuccess];
 
   const passwordRef = createRef();
