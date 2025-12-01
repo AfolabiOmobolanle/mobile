@@ -10,7 +10,10 @@
     "newArchEnabled": true,
     "ios": {
       "supportsTablet": true,
-      "bundleIdentifier": "com.lbseko360"
+      "bundleIdentifier": "com.lbseko360",
+      "infoPlist": {
+        "ITSAppUsesNonExemptEncryption": false
+      }
     },
     "android": {
       "versionCode": 3,
@@ -66,7 +69,7 @@
     "extra": {
       "router": {},
       "eas": {
-        "projectId": "0b6c09a4-a98a-4c38-bd9e-ed40813527c1"
+        "projectId": "1bcfa990-c361-4c4f-b2d2-993f0fc2f556"
       }
     }
   }

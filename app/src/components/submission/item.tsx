@@ -80,13 +80,38 @@ const SubmissonItem: React.FC<SubmissonItemProps> = ({
     setModalIsVisible((pState) => !pState);
   }, [setModalIsVisible]);
 
-  const name =
-    response.fullname ||
-    response.full_name ||
-    response.name ||
-    `${response.firstname || response.first_name || ""} ${
-      response.last_name || response.lastname || ""
-    }`;
+// Step 1: Make sure response exists and is an object
+let parsedResponse: any = {};
+let parsedFiles: string[] = [];
+
+if (response) {
+  if (typeof response === "string") {
+    try {
+      parsedResponse = JSON.parse(response);
+    } catch (err) {
+      console.warn("Failed to parse response string:", response);
+      parsedResponse = {};
+    }
+  } else {
+    parsedResponse = response;
+  }
+
+  // If response.files exists and is an array, use it
+  if (parsedResponse.files && Array.isArray(parsedResponse.files)) {
+    parsedFiles = parsedResponse.files;
+  }
+}
+
+
+// Step 2: Safely extract name
+const name =
+  parsedResponse.fullname ||
+  parsedResponse.full_name ||
+  parsedResponse.name ||
+  `${parsedResponse.firstname || parsedResponse.first_name || ""} ${
+    parsedResponse.lastname || parsedResponse.last_name || ""
+  }` ||
+  "User"; // fallback
 
   const handleEdit = useCallback(() => {
     setModalIsVisible(false);
@@ -134,19 +159,22 @@ const SubmissonItem: React.FC<SubmissonItemProps> = ({
           <ScrollView>
             <Text style={styles.title}>{title}</Text>
             <View style={{ marginTop: 50 }}>
-              {fields.map((field) => (
-                <PreviewItem
-                  key={field.slug}
-                  label={field.label}
-                  type={field.type}
-                  value={normalizeValue(
-                    field.type === "file"
-                      ? response.files.filter((file) =>
-                          file.includes(field.label)
-                        )[0] || response.files[0]
-                      : response[field.slug.toLowerCase()]
-                  )}
-                />
+{fields.map((field) => (
+  <PreviewItem
+    key={field.slug}
+    label={field.label}
+    type={field.type}
+    value={normalizeValue(
+      field.type === "file"
+        ? parsedFiles.find((file) =>
+            file.includes(field.label)
+          ) || parsedFiles[0] || "No file"
+        : parsedResponse[field.slug.toLowerCase()] || "N/A"
+    )}
+  />
+))}
+
+
               ))}
             </View>
           </ScrollView>

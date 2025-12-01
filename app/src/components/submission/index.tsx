@@ -48,6 +48,31 @@ const Submissions = () => {
   const [id, setId] = useState("");
   const [modalIsVisible, setModalIsVisible] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
+const [submittedForms, setSubmittedForms] = useState([]);
+
+// Fetch submitted forms from API
+const fetchSubmittedForms = async () => {
+  try {
+    const response = await fetch(
+      "https://core.eko360.ng/api/v1/data_collector/survey_response/getAll",
+      {
+        method: "GET",
+        headers: {
+          Authorization: token,
+          "Content-Type": "application/json",
+        },
+      }
+    );
+
+    if (!response.ok) throw new Error("Network response was not ok");
+
+    const data = await response.json();
+
+    setSubmittedForms(data?.data?.allSurveyResponses || []);
+  } catch (err) {
+    console.error("ERROR FETCHING SUBMITTED FORMS:", err);
+  }
+};
 
   const [{ loading, res, error }] = useApi({
     path: "data_collector/survey_response/getAll",
@@ -129,7 +154,9 @@ const Submissions = () => {
       getResponse();
     }
   }, [surveyId]);
-
+useEffect(() => {
+  fetchSubmittedForms();
+}, []);
   const renderSubmission = useCallback(
     ({ item }) => (
       <TouchableOpacity onPress={() => handleGetSurveys(item)}>
