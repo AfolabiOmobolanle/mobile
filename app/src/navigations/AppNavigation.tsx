@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useCallback, createRef } from "react";
 import { Text } from "react-native";
-import jwt_decode from "jwt-decode";
+import { jwtDecode } from "jwt-decode";
 
 import { createStackNavigator } from "@react-navigation/stack";
 import LandingNavigation from "./LandingNavigation";
@@ -19,12 +19,14 @@ import { useSurveyFormContext } from "../context/surveyFormContext";
 const stack = createStackNavigator();
 
 const authIsValid = (token: string) => {
-  const { exp } = jwt_decode(token) || { exp: 0 };
-
-  if (Date.now() >= exp * 1000) {
+  try {
+    const decoded = jwtDecode<{ exp: number }>(token);
+    const exp = decoded?.exp || 0;
+    
+    return Date.now() < exp * 1000;
+  } catch (error) {
     return false;
   }
-  return true;
 };
 
 const AppNavigation = () => {
