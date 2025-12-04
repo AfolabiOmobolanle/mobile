@@ -78,8 +78,7 @@
           "react-native-encrypted-storage",
           "react-native-securerandom",
           "react-native-pure-jwt",
-          "react-native-vector-icons",
-          "@react-native-community/clipboard"
+          "react-native-vector-icons"
         ]
       }
     }
