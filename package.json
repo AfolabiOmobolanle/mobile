@@ -26,7 +26,7 @@
     "add": "^2.0.6",
     "apisauce": "^3.2.2",
     "expo": "^54.0.25",
-    "expo-build-properties": "~1.0.9",
+    "expo-build-properties": "~1.0.10",
     "expo-clipboard": "~8.0.7",
     "expo-constants": "~18.0.10",
     "expo-device": "~8.0.9",
