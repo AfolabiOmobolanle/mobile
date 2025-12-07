@@ -62,15 +62,25 @@
       ],
       "expo-font",
       "expo-secure-store",
-
-      [
-        "expo-build-properties",
+[
+  "expo-build-properties",
+  {
+    "ios": {
+      "useFrameworks": "static",
+      "useModularHeaders": true,
+      "deploymentTarget": "15.1",
+      "iosSwiftVersion": "5.0",
+      "extraPods": [
         {
-          "ios": {
-            "useModularHeaders": true
-          }
+          "name": "GoogleUtilities",
+          "modular_headers": true
         }
       ]
+    }
+  }
+]
+
+
     ],
     "experiments": {
       "typedRoutes": true
