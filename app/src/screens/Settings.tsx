@@ -1,7 +1,6 @@
 import React, { useCallback, useState } from 'react';
 import { screenStyle } from './styles';
 import { SafeAreaView, Text, View, StyleSheet, Switch } from 'react-native';
-import DropDown from 'react-native-paper-dropdown';
 import { TextInput } from 'react-native-paper';
 import { useStyleConfig } from '../services/styles';
 import colors from '../config/colors';
@@ -12,6 +11,7 @@ import { useTheme } from '../services/theme';
 import { useFont } from '../services/font';
 import { useLogout } from '../components/common/logoutModal';
 import { ScrollView } from 'react-native-gesture-handler';
+import { Picker } from "@react-native-picker/picker";
 
 const getStyles = ({ theme, fontSize }) =>
   StyleSheet.create({
@@ -97,35 +97,32 @@ const SettingsScreen = ({ navigation }) => {
         <Text style={styles.title}>Appearance</Text>
         <View style={styles.section}>
           <View style={styles.sectionItem}>
-            <View>
-              <Text style={styles.sectionItemLabel}>Font Size</Text>
-              <DropDown
-                value={fontScale}
-                setValue={setFontScale}
-                list={fontScaleOptions}
-                visible={showFontOptions}
-                showDropDown={() => setShowFontOptions(true)}
-                onDismiss={() => setShowFontOptions(false)}
-                theme={{
-                  colors: { text: themeConfig.textDefault },
-                  dark: isDarkMode,
-                }}
-                inputProps={{
-                  right: (
-                    // <Feather name="chevron-down" size={24} color="black" />
-                    <TextInput.Icon
-                      name={'menu-down'}
-                      onPress={() => setShowFontOptions(true)}
-                    />
-                  ),
-                  dense: true,
-                  pointerEvents: 'none',
-                  editable: false,
-                  style: styles.inputStyle,
-                  underlineColor: 'transparent',
-                }}
-              />
-            </View>
+        <View>
+  <Text style={styles.sectionItemLabel}>Font Size</Text>
+  <View
+    style={{
+      borderWidth: 1,
+      borderColor: "lightgray",
+      borderRadius: 5,
+      backgroundColor: "white",
+      overflow: "hidden",
+    }}
+  >
+    <Picker
+      selectedValue={fontScale}
+      onValueChange={setFontScale}
+      style={[styles.inputStyle, { height: 48 }]}
+    >
+      {fontScaleOptions.map((option) => (
+        <Picker.Item
+          key={option.value}
+          label={option.label}
+          value={option.value}
+        />
+      ))}
+    </Picker>
+  </View>
+</View>
           </View>
           <View style={styles.sectionItem}>
             <Text style={styles.sectionItemLText}>Dark Mode</Text>

@@ -1,9 +1,10 @@
 import DateTimePicker from "@react-native-community/datetimepicker";
 import * as DocumentPicker from "expo-document-picker";
 import moment from "moment";
-import React, { useCallback, useState } from "react";
+import React, { useCallback, useState, useEffect } from "react";
 import { Controller } from "react-hook-form";
-import { ScrollView, StyleSheet, Text, TextInput, View,Image} from "react-native";
+import { ScrollView, StyleSheet, Text, TextInput, View, Image } from "react-native";
+import { Picker } from "@react-native-picker/picker";
 import {
   TouchableOpacity,
   TouchableWithoutFeedback,
@@ -11,17 +12,13 @@ import {
 import {
   Checkbox,
   RadioButton,
-  TextInput as TextInput_,
 } from "react-native-paper";
-import DropDown from "react-native-paper-dropdown";
 import colors from "../../config/colors";
 import font from "../../config/font";
 import { isRequired, numberValidate } from "../../services/form-validator";
 import { useStyleConfig } from "../../services/styles";
 import { useTheme } from "../../services/theme";
 import { FieldTypes } from "../../types/field";
-
-import { useEffect } from "react";
 
 const getStyles = ({ theme, fontSize }) =>
   StyleSheet.create({
@@ -37,7 +34,6 @@ const getStyles = ({ theme, fontSize }) =>
     formGroup: {
       flexDirection: "row",
       flexWrap: "wrap",
-      // alignItems: 'center',
     },
     checkboxItem: {
       marginRight: 20,
@@ -49,13 +45,10 @@ const getStyles = ({ theme, fontSize }) =>
       borderRadius: 5,
       borderWidth: 1,
       borderColor: theme.textCaption,
-      // color: theme.textDefault,
       color: "#000000",
       padding: 5,
-      // height: 50,
       backgroundColor: "white",
     },
-    
     fileInputWrapper: {
       marginBottom: 20,
     },
@@ -73,6 +66,7 @@ interface RadioItemPropTypes {
   label: string;
   value: string;
 }
+
 const RadioItem: React.FC<RadioItemPropTypes> = ({
   value,
   onChange,
@@ -84,6 +78,7 @@ const RadioItem: React.FC<RadioItemPropTypes> = ({
   const handleChange = () => {
     onChange(value);
   };
+
   return (
     <View
       style={[
@@ -106,14 +101,15 @@ const RadioItem: React.FC<RadioItemPropTypes> = ({
         <RadioButton.Android
           value={value}
           status={checked ? "checked" : "unchecked"}
-          onPress={() => handleChange()}
+          onPress={handleChange}
           color={colors.primary}
         />
       </View>
-      <Text style={[styles.label]}>{label}</Text>
+      <Text style={styles.label}>{label}</Text>
     </View>
   );
 };
+
 interface RadioPropTypes {
   value: string | number;
   onChange: (value: string | number) => void;
@@ -121,6 +117,7 @@ interface RadioPropTypes {
   label: string;
   error: any;
 }
+
 const Radio: React.FC<RadioPropTypes> = ({
   value,
   onChange,
@@ -140,9 +137,7 @@ const Radio: React.FC<RadioPropTypes> = ({
             value={opt}
             label={opt}
             checked={value === opt}
-            onChange={() => {
-              onChange(opt);
-            }}
+            onChange={onChange}
           />
         ))}
       </View>
@@ -157,6 +152,7 @@ interface CheckItemPropTypes {
   label: string;
   value: string;
 }
+
 const CheckItem: React.FC<CheckItemPropTypes> = ({
   checked,
   onChange,
@@ -165,7 +161,7 @@ const CheckItem: React.FC<CheckItemPropTypes> = ({
 }) => {
   const styles = useStyleConfig(getStyles);
 
-  const handleChange = useCallback(() => onChange(value), [onChange]);
+  const handleChange = useCallback(() => onChange(value), [onChange, value]);
 
   return (
     <View
@@ -196,6 +192,7 @@ const CheckItem: React.FC<CheckItemPropTypes> = ({
     </View>
   );
 };
+
 interface CheckPropTypes {
   options: Array<string>;
   label: string;
@@ -203,6 +200,7 @@ interface CheckPropTypes {
   value: any;
   error: any;
 }
+
 const Check: React.FC<CheckPropTypes> = ({
   options,
   label,
@@ -224,7 +222,7 @@ const Check: React.FC<CheckPropTypes> = ({
           ? value.filter((item: string) => item !== opt)
           : [...value, opt]
       ),
-    [itemIsChecked, value]
+    [value, onChange]
   );
 
   return (
@@ -249,14 +247,12 @@ const Check: React.FC<CheckPropTypes> = ({
 export const Input = ({
   label,
   error,
-  style,
   onChange,
   numberOfLines,
   placeholder,
   ...props
 }: any) => {
   const styles = useStyleConfig(getStyles);
-  const { themeConfig } = useTheme();
 
   return (
     <View style={styles.inputWrapper}>
@@ -264,10 +260,7 @@ export const Input = ({
       <TextInput
         {...props}
         numberOfLines={numberOfLines}
-        theme={{ colors: { text: themeConfig.textDefault } }}
         onChangeText={onChange}
-        dense
-        underlineColor="transparent"
         placeholder={placeholder}
         style={{
           color: "black",
@@ -276,6 +269,7 @@ export const Input = ({
           borderWidth: 1,
           borderColor: "lightgray",
           height: 48,
+          paddingHorizontal: 12,
         }}
       />
       <Text style={styles.inputFieldError}>{error && error.message}</Text>
@@ -283,13 +277,13 @@ export const Input = ({
   );
 };
 
+
 interface SelectPropTypes {
   label?: string;
   value: string | number;
   onChange: (value: string | number) => void;
   options?: Array<string>;
   onBlur: () => void;
-
   error: any;
 }
 
@@ -302,80 +296,39 @@ const Select: React.FC<SelectPropTypes> = ({
   error,
 }) => {
   const styles = useStyleConfig(getStyles);
-  const { themeConfig, isDarkMode } = useTheme();
-  const [open, setOpen] = useState(false);
-  const [radiovalue, setValue] = useState("");
-  const [show, setShow] = useState(false);
-  options = options ? options.map((opt) => ({ value: opt, label: opt })) : [];
-
-  useEffect(() => {
-    if (onChange) onChange(radiovalue);
-  }, [radiovalue]);
 
   return (
     <View style={[styles.inputWrapper, { marginVertical: 20 }]}>
       <Text style={styles.label}>{label}</Text>
-      {/* <DropDownPicker
-        style={{ backgroundColor: "white" }}
-        open={open}
-        value={radiovalue}
-        items={options}
-        setOpen={setOpen}
-        setValue={setValue}
-        // onChangeValue={(val) => {
-        //   // console.log(value);
-        // }}
-        // maxHeight={200}
-
-        // setItems={onChange}
-      /> */}
-      <DropDown
-        value={radiovalue}
-        setValue={setValue}
-        dropDownItemStyle={{ backgroundColor: "white" }}
-        dropDownItemSelectedStyle={{
-          backgroundColor: "lightgray",
-        }}
-        dropDownStyle={{
-          borderColor: "#322b7c",
-          borderWidth: 0.7,
-          borderRadius: 4,
-          borderStyle: "solid",
+      <View
+        style={{
+          borderWidth: 1,
+          borderColor: "lightgray",
+          borderRadius: 5,
           backgroundColor: "white",
+          overflow: "hidden",
         }}
-        list={options}
-        visible={show}
-        showDropDown={() => setShow(true)}
-        onDismiss={() => setShow(false)}
-        // theme={{
-        //   colors: { text: themeConfig.textDefault },
-        //   dark: isDarkMode,
-        // }}
-        inputProps={{
-          right: (
-            <TextInput_.Icon name={"menu-down"} onPress={() => setShow(true)} />
-          ),
-
-          // dense: true,
-          onBlur,
-          pointerEvents: "none",
-          editable: false,
-
-          style: {
+      >
+        <Picker
+          selectedValue={value}
+          onValueChange={onChange}
+          style={{
             height: 48,
-            backgroundColor: "white",
-            borderWidth: 1,
-            borderColor: "lightgray",
             color: "black",
-            borderRadius: 5,
-          },
-          underlineColor: "transparent",
-        }}
-      />
+          }}
+        >
+          <Picker.Item label="Select..." value="" />
+          {options.map((opt: string) => (
+            <Picker.Item key={opt} label={opt} value={opt} />
+          ))}
+        </Picker>
+      </View>
       <Text style={styles.inputFieldError}>{error && error.message}</Text>
     </View>
   );
 };
+
+
 
 const DateTimeInput = ({
   onChange,
@@ -383,9 +336,8 @@ const DateTimeInput = ({
   label,
   mode,
   error,
-}) => {
+}: any) => {
   const styles = useStyleConfig(getStyles);
-  const { themeConfig } = useTheme();
 
   const inputDisplay =
     mode === "date"
@@ -393,12 +345,15 @@ const DateTimeInput = ({
       : moment(value).format("h:mm a");
 
   const [show, setShow] = useState(false);
+
   const handleChange = useCallback(
-    (event: null, date) => {
+    (event: any, date: any) => {
       setShow(false);
-      onChange(date);
+      if (date) {
+        onChange(date);
+      }
     },
-    [setShow, onChange]
+    [onChange]
   );
 
   return (
@@ -408,7 +363,6 @@ const DateTimeInput = ({
           <Text style={styles.label}>{label}</Text>
           <TextInput
             value={inputDisplay}
-            // dense
             editable={false}
             style={{
               color: "black",
@@ -416,8 +370,8 @@ const DateTimeInput = ({
               borderWidth: 1,
               borderColor: "lightgray",
               borderRadius: 5,
+              paddingHorizontal: 12,
             }}
-            // theme={{ colors: { text: themeConfig.textDefault } }}
           />
           <Text style={styles.inputFieldError}>{error && error?.message}</Text>
         </View>
@@ -425,8 +379,7 @@ const DateTimeInput = ({
       {show && (
         <DateTimePicker
           value={new Date(value)}
-          mode={mode}
-          v
+          mode={mode as "date" | "time"}
           onChange={handleChange}
         />
       )}
@@ -434,110 +387,77 @@ const DateTimeInput = ({
   );
 };
 
-export const FileInput = ({ label, value, onChange, error }) => {
+export const FileInput = ({ label, value, onChange, error }: any) => {
   const styles = useStyleConfig(getStyles);
-  const valueIsString = typeof value === "string";
 
   const handlePress = useCallback(async () => {
-    DocumentPicker.getDocumentAsync({
-      // type: ["image/*", "application/pdf"],
-      type: "*/*", // Allow all file types
+    const res = await DocumentPicker.getDocumentAsync({
+      type: "*/*",
       multiple: true,
-    }).then((res) => {
-      console.log(res, "===");
-      if (res.assets?.length > 0) {
-        onChange(res?.assets);
-      }
     });
 
-    // let result = await ImagePicker.launchImageLibraryAsync({
-    //   mediaTypes: ImagePicker.MediaTypeOptions.All,
-    //   aspect: [4, 3],
-    //   quality: 1,
-    // });
-
-    // if (!result.canceled) {
-    //   onChange(result);
-    // }
-    // Alert.alert("", "Do you want to select an IMAGE?", [
-    //   {
-    //     text: "No",
-    //     onPress: () => {
-
-    //     },
-    //   },
-    //   {
-    //     text: "Yes",
-    //     onPress: async () => {
-
-    //     },
-    //   },
-    // ]);
+    if (!res.canceled && res.assets?.length > 0) {
+      onChange(res.assets);
+    }
   }, [onChange]);
 
   return (
-<View style={styles.fileInputWrapper}>
-  <Text style={styles.label}>{label}</Text>
+    <View style={styles.fileInputWrapper}>
+      <Text style={styles.label}>{label}</Text>
 
-  <View style={[styles.inputStyle, { padding: 0 }]}>
-    
-    {!value ? (
-      <TouchableOpacity onPress={handlePress} style={{ padding: 15 }}>
-        <Text style={{ ...styles.fileInputText, opacity: 0.8 }}>
-          Click and Select File To Upload
-        </Text>
-      </TouchableOpacity>
-    ) : (
-      <>
-        {/* IMAGE PREVIEW */}
-        <TouchableOpacity onPress={handlePress}>
-          <Image
-            source={{ uri: value.uri || value?.[0]?.uri }}
-            style={{
-              width: "100%",
-              height: 180,
-              borderRadius: 8,
-            }}
-            resizeMode="cover"
-          />
-        </TouchableOpacity>
+      <View style={[styles.inputStyle, { padding: 0 }]}>
+        {!value ? (
+          <TouchableOpacity onPress={handlePress} style={{ padding: 15 }}>
+            <Text style={{ ...styles.fileInputText, opacity: 0.8 }}>
+              Click and Select File To Upload
+            </Text>
+          </TouchableOpacity>
+        ) : (
+          <>
+            <TouchableOpacity onPress={handlePress}>
+              <Image
+                source={{ uri: value.uri || value?.[0]?.uri }}
+                style={{
+                  width: "100%",
+                  height: 180,
+                  borderRadius: 8,
+                }}
+                resizeMode="cover"
+              />
+            </TouchableOpacity>
 
-        {/* REMOVE BUTTON BELOW IMAGE */}
-        <TouchableOpacity
-          onPress={() => onChange(null)}
-          style={{ 
-            marginTop: 10,
-            alignSelf: "flex-end",
-            paddingVertical: 4,
-            paddingHorizontal: 8,
-          }}
-        >
-          <Text
-            style={{
-              color: "#d00",
-              fontWeight: "600",
-              textDecorationLine: "underline",
-            }}
-          >
-            Remove
-          </Text>
-        </TouchableOpacity>
-      </>
-    )}
+            <TouchableOpacity
+              onPress={() => onChange(null)}
+              style={{
+                marginTop: 10,
+                alignSelf: "flex-end",
+                paddingVertical: 4,
+                paddingHorizontal: 8,
+              }}
+            >
+              <Text
+                style={{
+                  color: "#d00",
+                  fontWeight: "600",
+                  textDecorationLine: "underline",
+                }}
+              >
+                Remove
+              </Text>
+            </TouchableOpacity>
+          </>
+        )}
+      </View>
 
-  </View>
-
-  <Text style={styles.inputFieldError}>{error && error.message}</Text>
-</View>
-
-
+      <Text style={styles.inputFieldError}>{error && error.message}</Text>
+    </View>
   );
 };
 
 const getFieldComponent = (type: string) => {
-  type = type.toLowerCase();
+  const lowerType = type.toLowerCase();
 
-  switch (type) {
+  switch (lowerType) {
     case "checkbox":
     case "check-box":
       return (props: any) => <Check {...props} />;
@@ -548,7 +468,7 @@ const getFieldComponent = (type: string) => {
 
     case "date":
     case "time":
-      return (props: any) => <DateTimeInput {...props} mode={type} />;
+      return (props: any) => <DateTimeInput {...props} mode={lowerType} />;
 
     case "radio":
     case "radio-box":
@@ -559,7 +479,9 @@ const getFieldComponent = (type: string) => {
       return FileInput;
 
     default:
-      const isTextArea = ["textarea", "paragraph", "text-area"].includes(type);
+      const isTextArea = ["textarea", "paragraph", "text-area"].includes(
+        lowerType
+      );
       return (props: any) => (
         <Input
           {...props}
@@ -570,7 +492,7 @@ const getFieldComponent = (type: string) => {
   }
 };
 
-interface buildFieldArgsTypes {
+interface BuildFieldArgsTypes {
   label: string;
   slug: string;
   required: boolean;
@@ -579,6 +501,7 @@ interface buildFieldArgsTypes {
   control: any;
   errors: any;
 }
+
 const BuildField = ({
   label,
   slug,
@@ -587,7 +510,7 @@ const BuildField = ({
   options = [],
   control,
   errors,
-}: buildFieldArgsTypes) => {
+}: BuildFieldArgsTypes) => {
   const Field = getFieldComponent(type);
   const isNumber = type === "number";
 
@@ -602,7 +525,6 @@ const BuildField = ({
           ...(isNumber && { numberValidate }),
         },
       }}
-      // render={({ onBlur, onChange, value }) => (
       render={({ field: { onChange, onBlur, value } }) => (
         <Field
           label={label}
@@ -612,7 +534,7 @@ const BuildField = ({
           onChangeText={onChange}
           onChange={onChange}
           value={value}
-          error={errors?.slug}
+          error={errors?.[slug]}
         />
       )}
     />
@@ -624,6 +546,7 @@ interface FormBuilderPropTypes {
   control: any;
   errors: any;
 }
+
 const FormBuilder: React.FC<FormBuilderPropTypes> = ({
   fields,
   control,

@@ -1,4 +1,4 @@
-import React, { useCallback, useContext, useEffect } from "react";
+import React, { useCallback, useContext, useEffect, useState } from "react";
 import { Text, SafeAreaView } from "react-native";
 
 import { screenStyle } from "../../styles";
@@ -9,11 +9,12 @@ import { useApi } from "../../../services/api";
 import LoadManager from "../../../components/common/loadManager";
 import { flattenSubmissionRes } from "../../../utils/format";
 import { useAuth } from "../../../services/auth";
-// import { UserActivityContext } from "../../../services/userActivity";
-// import UserInactivity from "react-native-user-inactivity";
 
 const FillSurveyScreen = ({ navigation, route }) => {
   const { surveyId, responseId } = route.params;
+  const { token } = useAuth(); // Add this to get token
+  const [assignmentData, setAssignmentData] = useState(null);
+
   const gotoPreview = useCallback(
     () => navigation.navigate("previewSurvey"),
     []
@@ -52,33 +53,69 @@ const FillSurveyScreen = ({ navigation, route }) => {
       : { fields: [] };
 
   const { clearAuth } = useAuth();
-  // const { active, setActive, timer } = useContext(UserActivityContext);
+
+  // DEBUG: Log survey assignment data when loaded
+  useEffect(() => {
+    if (surveyResponse?.data) {
+      const surveyData = surveyResponse.data;
+      console.log("=== SURVEY LOADED DEBUG ===");
+      console.log("Survey ID:", surveyData.id);
+      console.log("Survey Name:", surveyData.name);
+      console.log("Assigned To:", surveyData.assignedTo);
+      console.log("Assigned To Type:", typeof surveyData.assignedTo);
+      console.log("Is Assigned:", surveyData.isAssigned);
+      console.log("Full Survey Data:", JSON.stringify(surveyData, null, 2));
+
+      if (Array.isArray(surveyData.assignedTo)) {
+        console.log("Assignment Type: ARRAY");
+        console.log("Assignment Count:", surveyData.assignedTo.length);
+        surveyData.assignedTo.forEach((item, idx) => {
+          console.log(`Assignment ${idx}:`, item);
+        });
+      } else if (typeof surveyData.assignedTo === "object") {
+        console.log("Assignment Type: OBJECT");
+        console.log("Assignment Keys:", Object.keys(surveyData.assignedTo || {}));
+        console.log("Assignment Keys Count:", Object.keys(surveyData.assignedTo || {}).length);
+      } else {
+        console.log("Assignment Type: STRING/PRIMITIVE");
+        console.log("Assignment Value:", surveyData.assignedTo);
+      }
+    }
+  }, [surveyResponse]);
+
+  // Fetch assignment check
+  useEffect(() => {
+    if (surveyId && token) {
+      console.log("=== CHECKING ASSIGNMENT ===");
+      fetch(
+        `https://core.eko360.ng/api/v1/admin/survey/checkAssignment/${surveyId}`,
+        {
+          method: "GET",
+          headers: {
+            Authorization: token,
+            "Content-Type": "application/json",
+          },
+        }
+      )
+        .then(res => res.json())
+        .then(data => {
+          console.log("=== ASSIGNMENT CHECK RESPONSE ===");
+          console.log("Assignment Data:", JSON.stringify(data, null, 2));
+          setAssignmentData(data);
+        })
+        .catch(err => {
+          console.error("Assignment check failed:", err);
+        });
+    }
+  }, [surveyId, token]);
 
   useEffect(() => {
     fetchSurvey();
     fetchResponse();
   }, [surveyId]);
 
-  // useEffect(() => {
-  //   setActive(true);
-  // }, []);
-
-  // useEffect(() => {
-  //   if (!active) {
-  //     clearAuth();
-  //   }
-  // }, [active]);
-
   return (
     <SafeAreaView style={{ flex: 1 }}>
-      {/* <UserInactivity
-        isActive={active}
-        timeForInactivity={timer}
-        onAction={(isActive) => {
-          setActive(isActive);
-        }}
-        style={{ flex: 1 }}
-      > */}
       <SecondaryHeader
         title={survey.name || "Survey"}
         onBack={handleBack}
@@ -91,7 +128,6 @@ const FillSurveyScreen = ({ navigation, route }) => {
       >
         <SurveyForm {...survey} answers={answers} onSave={gotoPreview} />
       </LoadManager>
-      {/* </UserInactivity> */}
     </SafeAreaView>
   );
 };

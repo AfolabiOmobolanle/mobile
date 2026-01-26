@@ -1,4 +1,6 @@
 import moment from "moment";
+import AsyncStorage from '@react-native-async-storage/async-storage';
+
 import React, { useCallback, useEffect, useMemo, useState } from "react";
 import {
   ActivityIndicator,
@@ -42,13 +44,18 @@ const Submissions = () => {
 
   // const navigation: useNavigation<StackNavigationProp>();
   const styles = useStyleConfig(getStyles);
+  const [draftSubmissions, setDraftSubmissions] = useState<any[]>([]);
+
   const [filteredSubmissions, setFilteredSubmissions] = useState<any>([]);
+  const [activeTab, setActiveTab] = useState<"submitted" | "draft">("submitted");
+
   const [surveyId, setSurveyId] = useState("");
   const [surveys, setSurveys] = useState([]);
   const [id, setId] = useState("");
   const [modalIsVisible, setModalIsVisible] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
 const [submittedForms, setSubmittedForms] = useState([]);
+
 
 // Fetch submitted forms from API
 const fetchSubmittedForms = async () => {
@@ -73,6 +80,21 @@ const fetchSubmittedForms = async () => {
     console.error("ERROR FETCHING SUBMITTED FORMS:", err);
   }
 };
+const loadDrafts = async () => {
+  try {
+    const drafts = await AsyncStorage.getItem("surveyDraft");
+    if (drafts) {
+      const parsedDrafts = JSON.parse(drafts);
+      setDraftSubmissions(Array.isArray(parsedDrafts) ? parsedDrafts : []);
+    } else {
+      setDraftSubmissions([]);
+    }
+  } catch (e) {
+    console.log("Error loading drafts", e);
+    setDraftSubmissions([]);
+  }
+};
+
 
   const [{ loading, res, error }] = useApi({
     path: "data_collector/survey_response/getAll",
@@ -99,6 +121,37 @@ const fetchSubmittedForms = async () => {
         : [],
     [res]
   );
+  useEffect(() => {
+  loadDrafts();
+}, []);
+
+  useEffect(() => {
+  if (submissions.length > 0) {
+    console.log(
+      "SUBMISSION STATUSES:",
+      submissions.map((s) => ({
+        id: s.id,
+        status: s.status,
+      }))
+    );
+  }
+}, [submissions]);
+
+const displayedSubmissions = useMemo(() => {
+  if (activeTab === "draft") {
+    // Show drafts: use AsyncStorage drafts OR pending submissions
+    return draftSubmissions.length > 0 
+      ? draftSubmissions 
+      : submissions.filter(
+          (item) => item.status === "pending"
+        );
+  }
+
+  // Show submitted: accepted, rejected (exclude pending)
+  return submissions.filter(
+    (item) => item.status !== "pending"
+  );
+}, [activeTab, submissions, draftSubmissions]);
   // console.log("submissions", submissions);
   // const section = route.params ? route.params.section : '';
 
@@ -166,15 +219,15 @@ useEffect(() => {
     []
   );
 
-  useEffect(() => {
-    if (submissions?.length > 0) {
-      //remove duplicates
-      const unique = Array.from(
-        new Map(submissions.map((item) => [item.title, item])).values()
-      );
-      setFilteredSubmissions([...unique]);
-    }
-  }, [submissions]);
+  // useEffect(() => {
+  //   if (submissions?.length > 0) {
+  //     //remove duplicates
+  //     const unique = Array.from(
+  //       new Map(submissions.map((item) => [item.title, item])).values()
+  //     );
+  //     setFilteredSubmissions([...unique]);
+  //   }
+  // }, [submissions]);
 
   const handleEdit = useCallback(() => {
     console.log(navigation);
@@ -185,15 +238,15 @@ useEffect(() => {
 
   return (
     <View style={[styles.container, { paddingTop: 20 }]}>
-      <LoadManager
+    <LoadManager
         loading={showSubmissionsLoading}
-        empty={submissions.length < 1}
-        emptyMessage="No Submissions created so far"
+        empty={displayedSubmissions.length < 1}
+        emptyMessage={activeTab === "draft" ? "No Drafts" : "No Submissions created so far"}
         error={!!error}
         errorMessage={error}
       >
         <FlatList
-          data={filteredSubmissions}
+          data={displayedSubmissions}
           renderItem={renderSubmission}
           keyExtractor={(item) => `${item.id}`}
         />

@@ -109,18 +109,21 @@ const fetchSubmittedForms = async () => {
     setIsLoading(false);
   }
 };
-
-
-
 const handleGetStorage = async () => {
-  const surveys = await localStorage.getItem("surveyDraft");
-  if (!Array.isArray(surveys)) return setDrafts([]);
-
-  // Filter surveys that belong to the current user
-  const allowedSurveys = surveys.filter((survey) => survey.isAssigned);
-  setDrafts(allowedSurveys);
+  try {
+    const surveys = await localStorage.getItem("surveyDraft");
+    if (!Array.isArray(surveys)) {
+      return setDrafts([]);
+    }
+    setDrafts(surveys);
+  } catch (err) {
+    setDrafts([]);
+  }
 };
 
+useEffect(() => {
+  handleGetStorage();
+}, []);
   const submit = (index: number) => {
     const result = drafts?.filter((item, inde) => inde === index);
     Alert.alert(
@@ -134,18 +137,20 @@ const handleGetStorage = async () => {
   };
 
 const handleSubmit = async (draft: any, index: number) => {
-    if (!draft[0].isAssigned) {
-    Alert.alert("Cannot Submit", "This survey is not assigned to you.");
-    return;
-  }
+  const surveyData = draft[0];
+
+  console.log("=== SUBMISSION DEBUG ===");
+  console.log("Survey ID:", surveyData.surveyId);
+  console.log("Draft Data:", JSON.stringify(surveyData, null, 2));
+
   setIsLoading(true);
 
   try {
     const data = new FormData();
-    data.append("surveyId", draft[0].surveyId);
-    data.append("name", draft[0].name);
+    data.append("surveyId", surveyData.surveyId);
+    data.append("name", surveyData.name);
 
-    let formattedResponses = draft[0].responses;
+    let formattedResponses = surveyData.responses;
     if (typeof formattedResponses === "string") {
       formattedResponses = JSON.parse(formattedResponses);
     }
@@ -158,8 +163,8 @@ const handleSubmit = async (draft: any, index: number) => {
     data.append("responses", JSON.stringify(formattedResponses));
 
     // Files
-    for (let a = 0; a < (draft[0]?.fileFields?.length || 0); a++) {
-      const files = draft[0]?.fileFields[a]?.value || [];
+    for (let a = 0; a < (surveyData?.fileFields?.length || 0); a++) {
+      const files = surveyData?.fileFields[a]?.value || [];
       for (let i = 0; i < files.length; i++) {
         const file = files[i];
         if (file?.uri) {
@@ -172,7 +177,6 @@ const handleSubmit = async (draft: any, index: number) => {
       }
     }
 
-    // Submit safely
     const response = await fetch(
       "https://core.eko360.ng/api/v1/data_collector/survey_response/create",
       {
@@ -193,18 +197,30 @@ const handleSubmit = async (draft: any, index: number) => {
       json = null;
     }
 
+    console.log("Response Status:", response.status);
+    console.log("Response Body:", json);
+
+    // Handle the actual backend response
     if (!response.ok) {
-      // Handle 401 separately
-      if (response.status === 401) {
-        Alert.alert("Unauthorized", json?.message || "Survey is not assigned to you.");
+      // Check for assignment-related errors
+      const errorMsg = json?.message || "";
+      const isAssignmentError = 
+        errorMsg.includes("not assigned") || 
+        errorMsg.includes("multiple") ||
+        response.status === 401;
+
+      if (isAssignmentError) {
+        console.warn("Assignment validation failed:", errorMsg);
+        Alert.alert(
+          "Cannot Submit",
+          `This form cannot be submitted: ${errorMsg}. Please contact your administrator.`,
+          [{ text: "OK" }]
+        );
       } else {
-        Alert.alert("Error", json?.message || "Failed to submit survey.");
+        Alert.alert("Error", errorMsg || "Failed to submit survey.");
       }
-      console.error("Submit failed:", response.status, responseText);
       return;
     }
-
-    console.log("---- SUBMIT RESULT ----", json);
 
     if (json?.status === "success") {
       Alert.alert("Success", "Survey submitted successfully");
@@ -224,7 +240,9 @@ const handleSubmit = async (draft: any, index: number) => {
     setIsLoading(false);
   }
 };
-
+useEffect(() => {
+  fetchSubmittedForms();
+}, []);
 
 
   return (
@@ -270,52 +288,44 @@ const handleSubmit = async (draft: any, index: number) => {
     </TouchableOpacity>
   </View>
 
-  {/* Tab Content */}
-  {isActive === "submitted" ? (
-    <Submissions submittedForms={submittedForms} />
-
-  ) : (
-    <View style={{ paddingTop: 20, backgroundColor: "white", flex: 1 }}>
-      {isLoading ? (
-        <Text
-          style={{
-            color: colors.primary,
-            fontSize: 18,
-            marginTop: 30,
-            textAlign: "center",
-          }}
-        >
-          Please wait... Submitting draft
-        </Text>
-      ) : (
-        <ScrollView>
-          {drafts?.map((item, index) => (
-            <View style={styles.rowItem} key={index}>
-              <View>
-                <Text style={styles.row}>{item?.name}</Text>
-                <Text style={styles.date}>{item?.time}</Text>
+     {/* Tab Content */}
+    {isActive === "submitted" ? (
+      <Submissions submittedForms={submittedForms} />
+    ) : (
+      <View style={{ paddingTop: 20, backgroundColor: "white", flex: 1 }}>
+        {isLoading ? (
+          <Text
+            style={{
+              color: colors.primary,
+              fontSize: 18,
+              marginTop: 30,
+              textAlign: "center",
+            }}
+          >
+            Please wait... Submitting draft
+          </Text>
+        ) : (
+          <ScrollView>
+            {drafts?.map((item, index) => (
+              <View style={styles.rowItem} key={index}>
+                <View>
+                  <Text style={styles.row}>{item?.name}</Text>
+                  <Text style={styles.date}>{item?.time}</Text>
+                </View>
+                               <TouchableOpacity
+                  onPress={() => submit(index)}
+                  style={styles.btn}
+                >
+                  <Text style={{ color: "white" }}>Submit now</Text>
+                </TouchableOpacity>
               </View>
-            <TouchableOpacity
-  onPress={() => submit(index)}
-  disabled={!item.isAssigned} // disable if not assigned
-  style={[
-    styles.btn,
-    !item.isAssigned && { backgroundColor: "#ccc" } 
-  ]}
->
-  <Text style={{ color: "white" }}>
-    {item.isAssigned ? "Submit now" : "Not allowed"}
-  </Text>
-</TouchableOpacity>
-
-            </View>
-          ))}
-        </ScrollView>
-      )}
-    </View>
-  )}
-  {/* </UserInactivity> */}
-</SafeAreaView>
+            ))}
+          </ScrollView>
+        )}
+      </View>
+    )}
+    {/* </UserInactivity> */}
+  </SafeAreaView>
   )
 };
 
