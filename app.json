@@ -39,56 +39,21 @@
     },
     "plugins": [
       "expo-router",
-      [
-        "expo-splash-screen",
-        {
-          "image": "./assets/images/splash.png",
-          "imageWidth": 200,
-          "resizeMode": "contain",
-          "backgroundColor": "#ffffff"
-        }
-      ],
-      [
-        "expo-document-picker",
-        {
-          "iCloudContainerEnvironment": "Production"
-        }
-      ],
-      [
-        "expo-image-picker",
-        {
-          "photosPermission": "The app accesses your photos to let you share them with eko360."
-        }
-      ],
+      ["expo-splash-screen", { "image": "./assets/images/splash.png", "imageWidth": 200, "resizeMode": "contain", "backgroundColor": "#ffffff" }],
+      ["expo-document-picker", { "iCloudContainerEnvironment": "Production" }],
+      ["expo-image-picker", { "photosPermission": "The app accesses your photos to let you share them with eko360." }],
       "expo-font",
       "expo-secure-store",
-[
-  "expo-build-properties",
-  {
-    "ios": {
-      "useFrameworks": "static",
-      "useModularHeaders": true,
-      "deploymentTarget": "15.1",
-      "iosSwiftVersion": "5.0",
-      "extraPods": [
-        {
-          "name": "GoogleUtilities",
-          "modular_headers": true
-        }
-      ]
-    }
-  }
-]
-
-
+      ["expo-build-properties", { "ios": { "useFrameworks": "static", "useModularHeaders": true, "deploymentTarget": "15.1", "iosSwiftVersion": "5.0", "extraPods": [{ "name": "GoogleUtilities", "modular_headers": true }] } }]
     ],
     "experiments": {
       "typedRoutes": true
     },
     "extra": {
       "router": {},
+      "eas": {
         "projectId": "1bcfa990-c361-4c4f-b2d2-993f0fc2f556"
-      
+      }
     }
   }
 }
