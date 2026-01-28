@@ -74,21 +74,21 @@ const getStyles = ({ theme, fontSize }) =>
       backgroundColor: 'transparent',
     },
   });
-
 const SettingsScreen = ({ navigation }) => {
   const styles = useStyleConfig(getStyles);
   const handleBackPress = useCallback(() => navigation.goBack(), [navigation]);
 
   const { logout } = useLogout();
-
   const { toggleTheme, themeConfig, isDarkMode } = useTheme();
-
   const [showFontOptions, setShowFontOptions] = useState(false);
   const { fontScale, setFontScale } = useFont();
+  
   const fontScaleOptions = fontScales.map((scale) => ({
     label: scale,
     value: scale,
   }));
+
+  const selectedLabel = fontScaleOptions.find(opt => opt.value === fontScale)?.label || "Select...";
 
   return (
     <SafeAreaView style={screenStyle}>
@@ -97,33 +97,113 @@ const SettingsScreen = ({ navigation }) => {
         <Text style={styles.title}>Appearance</Text>
         <View style={styles.section}>
           <View style={styles.sectionItem}>
-        <View>
-  <Text style={styles.sectionItemLabel}>Font Size</Text>
-  <View
-    style={{
-      borderWidth: 1,
-      borderColor: "lightgray",
-      borderRadius: 5,
-      backgroundColor: "white",
-      overflow: "hidden",
-    }}
-  >
-    <Picker
-      selectedValue={fontScale}
-      onValueChange={setFontScale}
-      style={[styles.inputStyle, { height: 48 }]}
-    >
-      {fontScaleOptions.map((option) => (
-        <Picker.Item
-          key={option.value}
-          label={option.label}
-          value={option.value}
-        />
-      ))}
-    </Picker>
-  </View>
-</View>
+            <View style={{ flex: 1 }}>
+              <Text style={styles.sectionItemLabel}>Font Size</Text>
+              
+              {Platform.OS === 'ios' ? (
+                <>
+                  <TouchableOpacity
+                    onPress={() => setShowFontOptions(true)}
+                    style={{
+                      borderWidth: 1,
+                      borderColor: "lightgray",
+                      borderRadius: 5,
+                      backgroundColor: "white",
+                      padding: 12,
+                      height: 48,
+                      justifyContent: "center",
+                      marginTop: 8,
+                    }}
+                  >
+                    <Text style={{ color: fontScale ? "black" : "gray" }}>
+                      {selectedLabel}
+                    </Text>
+                  </TouchableOpacity>
+
+                  <Modal visible={showFontOptions} transparent animationType="slide">
+                    <View
+                      style={{
+                        flex: 1,
+                        justifyContent: "flex-end",
+                        backgroundColor: "rgba(0,0,0,0.5)",
+                      }}
+                    >
+                      <View style={{ backgroundColor: "white" }}>
+                        <TouchableOpacity
+                          onPress={() => setShowFontOptions(false)}
+                          style={{ padding: 15, alignItems: "center" }}
+                        >
+                          <Text
+                            style={{
+                              fontSize: 16,
+                              color: colors.primary,
+                              fontWeight: "600",
+                            }}
+                          >
+                            Done
+                          </Text>
+                        </TouchableOpacity>
+                        <ScrollView style={{ maxHeight: 300 }}>
+                          {fontScaleOptions.map((option) => (
+                            <TouchableOpacity
+                              key={option.value}
+                              onPress={() => {
+                                setFontScale(option.value);
+                                setShowFontOptions(false);
+                              }}
+                              style={{
+                                paddingVertical: 15,
+                                paddingHorizontal: 20,
+                                borderBottomWidth: 1,
+                                borderBottomColor: "#f0f0f0",
+                                backgroundColor: fontScale === option.value ? "#f5f5f5" : "white",
+                              }}
+                            >
+                              <Text
+                                style={{
+                                  fontSize: 16,
+                                  color: fontScale === option.value ? colors.primary : "black",
+                                  fontWeight: fontScale === option.value ? "600" : "400",
+                                }}
+                              >
+                                {option.label}
+                              </Text>
+                            </TouchableOpacity>
+                          ))}
+                        </ScrollView>
+                      </View>
+                    </View>
+                  </Modal>
+                </>
+              ) : (
+                <View
+                  style={{
+                    borderWidth: 1,
+                    borderColor: "lightgray",
+                    borderRadius: 5,
+                    backgroundColor: "white",
+                    overflow: "hidden",
+                    marginTop: 8,
+                  }}
+                >
+                  <Picker
+                    selectedValue={fontScale}
+                    onValueChange={setFontScale}
+                    style={[styles.inputStyle, { height: 48 }]}
+                  >
+                    {fontScaleOptions.map((option) => (
+                      <Picker.Item
+                        key={option.value}
+                        label={option.label}
+                        value={option.value}
+                      />
+                    ))}
+                  </Picker>
+                </View>
+              )}
+            </View>
           </View>
+
           <View style={styles.sectionItem}>
             <Text style={styles.sectionItemLText}>Dark Mode</Text>
             <Switch
@@ -142,3 +222,4 @@ const SettingsScreen = ({ navigation }) => {
 };
 
 export default SettingsScreen;
+

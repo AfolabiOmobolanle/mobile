@@ -58,26 +58,13 @@ const FillSurveyScreen = ({ navigation, route }) => {
   useEffect(() => {
     if (surveyResponse?.data) {
       const surveyData = surveyResponse.data;
-      console.log("=== SURVEY LOADED DEBUG ===");
-      console.log("Survey ID:", surveyData.id);
-      console.log("Survey Name:", surveyData.name);
-      console.log("Assigned To:", surveyData.assignedTo);
-      console.log("Assigned To Type:", typeof surveyData.assignedTo);
-      console.log("Is Assigned:", surveyData.isAssigned);
-      console.log("Full Survey Data:", JSON.stringify(surveyData, null, 2));
 
       if (Array.isArray(surveyData.assignedTo)) {
-        console.log("Assignment Type: ARRAY");
-        console.log("Assignment Count:", surveyData.assignedTo.length);
         surveyData.assignedTo.forEach((item, idx) => {
-          console.log(`Assignment ${idx}:`, item);
         });
       } else if (typeof surveyData.assignedTo === "object") {
-        console.log("Assignment Type: OBJECT");
-        console.log("Assignment Keys:", Object.keys(surveyData.assignedTo || {}));
         console.log("Assignment Keys Count:", Object.keys(surveyData.assignedTo || {}).length);
       } else {
-        console.log("Assignment Type: STRING/PRIMITIVE");
         console.log("Assignment Value:", surveyData.assignedTo);
       }
     }
@@ -86,7 +73,6 @@ const FillSurveyScreen = ({ navigation, route }) => {
   // Fetch assignment check
   useEffect(() => {
     if (surveyId && token) {
-      console.log("=== CHECKING ASSIGNMENT ===");
       fetch(
         `https://core.eko360.ng/api/v1/admin/survey/checkAssignment/${surveyId}`,
         {
@@ -99,8 +85,6 @@ const FillSurveyScreen = ({ navigation, route }) => {
       )
         .then(res => res.json())
         .then(data => {
-          console.log("=== ASSIGNMENT CHECK RESPONSE ===");
-          console.log("Assignment Data:", JSON.stringify(data, null, 2));
           setAssignmentData(data);
         })
         .catch(err => {

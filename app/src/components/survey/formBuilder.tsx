@@ -1,6 +1,8 @@
 import DateTimePicker from "@react-native-community/datetimepicker";
 import * as DocumentPicker from "expo-document-picker";
 import moment from "moment";
+import { Modal } from "react-native";
+import { Platform } from "react-native";
 import React, { useCallback, useState, useEffect } from "react";
 import { Controller } from "react-hook-form";
 import { ScrollView, StyleSheet, Text, TextInput, View, Image } from "react-native";
@@ -276,8 +278,6 @@ export const Input = ({
     </View>
   );
 };
-
-
 interface SelectPropTypes {
   label?: string;
   value: string | number;
@@ -296,7 +296,94 @@ const Select: React.FC<SelectPropTypes> = ({
   error,
 }) => {
   const styles = useStyleConfig(getStyles);
+  const [visible, setVisible] = useState(false);
 
+  const selectedLabel = options.find((opt) => opt === value) || "Select...";
+
+  // iOS modal picker
+  if (Platform.OS === "ios") {
+    return (
+      <View style={[styles.inputWrapper, { marginVertical: 20 }]}>
+        <Text style={styles.label}>{label}</Text>
+        
+        <TouchableOpacity
+          onPress={() => setVisible(true)}
+          style={{
+            borderWidth: 1,
+            borderColor: "lightgray",
+            borderRadius: 5,
+            backgroundColor: "white",
+            padding: 12,
+            height: 48,
+            justifyContent: "center",
+          }}
+        >
+          <Text style={{ color: value ? "black" : "gray" }}>
+            {selectedLabel}
+          </Text>
+        </TouchableOpacity>
+
+        <Modal visible={visible} transparent animationType="slide">
+          <View
+            style={{
+              flex: 1,
+              justifyContent: "flex-end",
+              backgroundColor: "rgba(0,0,0,0.5)",
+            }}
+          >
+            <View style={{ backgroundColor: "white" }}>
+              <TouchableOpacity
+                onPress={() => setVisible(false)}
+                style={{ padding: 15, alignItems: "center" }}
+              >
+                <Text
+                  style={{
+                    fontSize: 16,
+                    color: colors.primary,
+                    fontWeight: "600",
+                  }}
+                >
+                  Done
+                </Text>
+              </TouchableOpacity>
+              <ScrollView style={{ maxHeight: 300 }}>
+                {options.map((opt: string) => (
+                  <TouchableOpacity
+                    key={opt}
+                    onPress={() => {
+                      onChange(opt);
+                      setVisible(false);
+                    }}
+                    style={{
+                      paddingVertical: 15,
+                      paddingHorizontal: 20,
+                      borderBottomWidth: 1,
+                      borderBottomColor: "#f0f0f0",
+                      backgroundColor: value === opt ? "#f5f5f5" : "white",
+                    }}
+                  >
+                    <Text
+                      style={{
+                        fontSize: 16,
+                        color: value === opt ? colors.primary : "black",
+                        fontWeight: value === opt ? "600" : "400",
+                      }}
+                    >
+                      {opt}
+                    </Text>
+                  </TouchableOpacity>
+                ))}
+              </ScrollView>
+            </View>
+          </View>
+        </Modal>
+
+        <Text style={styles.inputFieldError}>{error && error.message}</Text>
+      </View>
+    );
+  }
+
+  // Android native picker
   return (
     <View style={[styles.inputWrapper, { marginVertical: 20 }]}>
       <Text style={styles.label}>{label}</Text>
@@ -327,6 +414,8 @@ const Select: React.FC<SelectPropTypes> = ({
     </View>
   );
 };
+
+
 
 
 

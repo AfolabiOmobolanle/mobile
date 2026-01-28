@@ -10,7 +10,7 @@ import {
   TouchableOpacity,
   View,
 } from "react-native";
-
+import { MaterialIcons } from '@expo/vector-icons';
 import PrimaryHeader from "../../components/common/header";
 import HeaderGroup from "../../components/common/headerGroup";
 import Submissions from "../../components/submission";
@@ -120,6 +120,42 @@ const handleGetStorage = async () => {
     setDrafts([]);
   }
 };
+// Add this function after handleGetStorage
+const handleEditDraft = (index: number) => {
+  const draft = drafts[index];
+  navigation.navigate("fillSurvey", {
+    surveyId: draft.surveyId,
+    draftData: draft,
+    isDraft: true,
+    draftIndex: index,
+  });
+};
+
+const handleDeleteDraft = (index: number) => {
+  Alert.alert(
+    "Delete Draft",
+    "Are you sure you want to delete this draft?",
+    [
+      { text: "Cancel", onPress: () => console.log("Cancel") },
+      {
+        text: "Delete",
+        onPress: async () => {
+          try {
+            const updatedDrafts = drafts.filter((_, i) => i !== index);
+            await localStorage.removeItem("surveyDraft");
+            await localStorage.setItem("surveyDraft", updatedDrafts);
+            setDrafts(updatedDrafts);
+            Alert.alert("Success", "Draft deleted");
+          } catch (err) {
+            Alert.alert("Error", "Failed to delete draft");
+          }
+        },
+        style: "destructive",
+      },
+    ]
+  );
+};
+
 
 useEffect(() => {
   handleGetStorage();
@@ -306,20 +342,28 @@ useEffect(() => {
           </Text>
         ) : (
           <ScrollView>
-            {drafts?.map((item, index) => (
-              <View style={styles.rowItem} key={index}>
-                <View>
-                  <Text style={styles.row}>{item?.name}</Text>
-                  <Text style={styles.date}>{item?.time}</Text>
-                </View>
-                               <TouchableOpacity
-                  onPress={() => submit(index)}
-                  style={styles.btn}
-                >
-                  <Text style={{ color: "white" }}>Submit now</Text>
-                </TouchableOpacity>
-              </View>
-            ))}
+{drafts?.map((item, index) => (
+  <View style={styles.rowItem} key={index}>
+    <View style={{ flex: 1 }}>
+      <Text style={styles.row}>{item?.name}</Text>
+      <Text style={styles.date}>{item?.time}</Text>
+    </View>
+    <View style={{ flexDirection: "row", gap: 15, alignItems: "center", paddingRight: 10 }}>
+      <TouchableOpacity onPress={() => handleEditDraft(index)}>
+        <MaterialIcons name="edit" size={24} color="#19d2c6" />
+      </TouchableOpacity>
+      <TouchableOpacity onPress={() => handleDeleteDraft(index)}>
+        <MaterialIcons name="delete" size={24} color="#2fd3d3" />
+      </TouchableOpacity>
+      <TouchableOpacity
+        onPress={() => submit(index)}
+        style={styles.btn}
+      >
+        <Text style={{ color: "white", fontSize: 14 }}>Submit</Text>
+      </TouchableOpacity>
+    </View>
+  </View>
+))}
           </ScrollView>
         )}
       </View>
@@ -332,11 +376,12 @@ useEffect(() => {
 const styles = StyleSheet.create({
   btn: {
     backgroundColor: colors.primary,
-    padding: 2,
-    paddingHorizontal: 7,
+    padding: 4,
+    paddingHorizontal: 10,
     color: "white",
-    borderRadius: 5,
-    verticalAlign: "middle",
+ minWidth: 40,
+ borderRadius: 5,
+    alignItems: "center",
   },
   rowItem: {
     borderBottomWidth: 1,
