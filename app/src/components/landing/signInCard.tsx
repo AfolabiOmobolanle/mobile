@@ -15,8 +15,11 @@ import {
   TouchableWithoutFeedback,
   Keyboard,
   TouchableOpacity,
+  Platform
 } from "react-native";
 import * as Device from "expo-device";
+import * as SecureStore from "expo-secure-store";
+
 let Notifications: typeof import("expo-notifications") | null = null;
 if (Device.isDevice) {
   Notifications = require("expo-notifications");
@@ -239,39 +242,45 @@ async function getExpoPushToken() {
 }
 
 // Function to store push token in backend
-async function storeFcmToken(auth, fcmToken) {
-  try {
-    if (!auth?.token || !fcmToken) return;
+ async function storeFcmToken(auth, fcmToken) {
+    try {
+      if (!auth?.token || !fcmToken) return;
 
-    const deviceId =
-      Device.osInternalBuildId || Device.androidId || Constants.installationId || "unknown";
-    const deviceName = Device.deviceName || Device.modelName || "unknown";
-    const deviceType = Platform.OS === "ios" ? "Ios" : "Android";
+      const deviceId =
+        Device.osInternalBuildId ||
+        Device.androidId ||
+        Constants.installationId ||
+        "unknown";
+      const deviceName = Device.deviceName || Device.modelName || "unknown";
+      const deviceType = Platform.OS === "ios" ? "Ios" : "Android";
 
-    const response = await fetch(
-      "https://core.eko360.ng/api/v1/data_collector/firebase/store-token",
-      {
-        method: "POST",
-        headers: {
-          Authorization: auth.token,
-          Accept: "application/json",
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          fcmToken,
-          deviceId,
-          deviceName,
-          deviceType,
-        }),
-      }
-    );
+      // Store locally for offline use
+      await SecureStore.setItemAsync("expoPushToken", fcmToken);
 
-    const json = await response.json().catch(() => null);
-    console.log("store-token response:", response.status, json);
-  } catch (storeErr) {
-    console.log("Error storing FCM token:", storeErr);
+      const response = await fetch(
+        "https://core.eko360.ng/api/v1/data_collector/firebase/store-token",
+        {
+          method: "POST",
+          headers: {
+            Authorization: auth.token,
+            Accept: "application/json",
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            fcmToken,
+            deviceId,
+            deviceName,
+            deviceType,
+          }),
+        }
+      );
+
+      const json = await response.json().catch(() => null);
+      console.log("store-token response:", response.status, json);
+    } catch (storeErr) {
+      console.log("Error storing FCM token:", storeErr);
+    }
   }
-}
 
 const onSubmit = async (data) => {
   console.log(data, "---", error);
