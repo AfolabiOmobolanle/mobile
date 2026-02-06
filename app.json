@@ -2,7 +2,7 @@
   "expo": {
     "name": "eko360 Data Collect",
     "slug": "lbseko360",
-    "version": "1.0.3",
+    "version": "1.0.4",
     "orientation": "portrait",
     "icon": "./assets/images/icon.png",
     "scheme": "lbseko360",
@@ -11,13 +11,14 @@
     "ios": {
       "supportsTablet": true,
       "bundleIdentifier": "com.lbseko360",
-      "buildNumber": "3",
+      "buildNumber": "4",
       "infoPlist": {
         "ITSAppUsesNonExemptEncryption": false
       }
     },
     "android": {
-      "versionCode": 4,
+      "versionCode": 5,
+      "package": "com.eko.eko360mobile",
       "adaptiveIcon": {
         "foregroundImage": "./assets/images/adaptive-icon.png",
         "backgroundColor": "#ffffff"
@@ -30,7 +31,6 @@
         "android.permission.STORAGE",
         "android.permission.RECORD_AUDIO"
       ],
-      "package": "com.lbseko360",
       "googleServicesFile": "./google-services.json"
     },
     "web": {
