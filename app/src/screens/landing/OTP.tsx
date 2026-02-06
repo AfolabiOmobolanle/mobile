@@ -1,19 +1,15 @@
 import { View, Text, Alert, StyleSheet, TextInput } from "react-native";
 import React, { useRef, useState } from "react";
-// import OTPTextInput from "react-native-otp-textinput";
-// import OTPInputView from "@twotalltotems/react-native-otp-input";
-// import OtpInputs from "react-native-otp-inputs";
 
 import Button from "../../components/common/button";
 import { useAuth } from "../../services/auth";
 import localStorage from "../../services/storage";
+import Constants from "expo-constants";
 
 const OTP = ({ route }) => {
-  // console.log(route?.params?.auth.token);
   const { setAuth } = useAuth();
   const [value, setValue] = useState("");
   const [isLoading, setIsLoading] = useState(false);
-  // "react-native-otp-textinput": "^1.1.1",
   const [otp, setOtp] = useState("");
   const [otp2, setOtp2] = useState("");
   const [otp3, setOtp3] = useState("");
@@ -23,10 +19,20 @@ const OTP = ({ route }) => {
   const otp4Ref = useRef(null);
 
   const verifyCode = async () => {
-    // await localStorage.setItem("otpVerified", "Yes");
     const code = `${otp}${otp2}${otp3}${otp4}`;
-    console.log(code);
+    const demoEmail = route?.params?.auth?.user?.email;
+    const isReviewMode = Constants.expoConfig?.extra?.reviewMode;
 
+    // DEMO ACCOUNT - skip OTP, go directly to home
+    if (isReviewMode && demoEmail === "joel+test@findworka.com") {
+      setIsLoading(true);
+      await localStorage.setItem("otpVerified", "Yes");
+      setAuth(route?.params?.auth);
+      route?.params?.onLoginSuccess();
+      return;
+    }
+
+    // REGULAR ACCOUNTS - require OTP
     if (code?.length === 4) {
       setIsLoading(true);
       try {
@@ -48,9 +54,9 @@ const OTP = ({ route }) => {
 
         response = await response.json();
         setIsLoading(false);
-        // console.log(response, "verify otp response is here");
+
         if (response?.status === "success") {
-          let resp = await localStorage.setItem("otpVerified", "Yes");
+          await localStorage.setItem("otpVerified", "Yes");
           setAuth(route?.params?.auth);
           route?.params?.onLoginSuccess();
         }
@@ -61,6 +67,8 @@ const OTP = ({ route }) => {
         setIsLoading(false);
         console.log(error?.message);
       }
+    } else {
+      Alert.alert("", "Please enter a valid 4-digit code");
     }
   };
 
@@ -124,30 +132,6 @@ const OTP = ({ route }) => {
         />
       </View>
 
-      {/* <OtpInputs
-        handleChange={(code) => console.log(code)}
-        numberOfInputs={6}
-        inputStyles={styles.input}
-        autofillFromClipboard={false}
-      /> */}
-      {/* <OTPInputView
-        style={{ height: 200 }}
-        pinCount={4}
-        // code={this.state.code} //You can supply this prop or not. The component will be used as a controlled / uncontrolled component respectively.
-        // onCodeChanged = {code => { this.setState({code})}}
-        autoFocusOnLoad
-        codeInputFieldStyle={styles.underlineStyleBase}
-        codeInputHighlightStyle={styles.underlineStyleHighLighted}
-        onCodeFilled={(code) => {
-          setValue(code);
-          console.log(`Code is ${code}, you are good to go!`);
-        }}
-      /> */}
-      {/* <OTPTextInput
-        autoFocus
-        handleTextChange={(text) => setValue(text)}
-        // ref={(e) => (otpInput = e)}
-      /> */}
       <View style={{ marginVertical: 20 }} />
       <Button
         title={isLoading ? "Please wait..." : "Verify"}
@@ -171,12 +155,10 @@ const styles = StyleSheet.create({
     width: 30,
     height: 45,
   },
-
   borderStyleHighLighted: {
     borderColor: "black",
     color: "black",
   },
-
   underlineStyleBase: {
     width: 30,
     height: 45,
@@ -186,7 +168,6 @@ const styles = StyleSheet.create({
     fontSize: 20,
     borderBottomColor: "black",
   },
-
   underlineStyleHighLighted: {
     borderColor: "black",
   },
