@@ -2,7 +2,7 @@
   "expo": {
     "name": "eko360 Data Collect",
     "slug": "lbseko360",
-    "version": "1.0.4",
+    "version": "1.0.5",
     "orientation": "portrait",
     "icon": "./assets/images/icon.png",
     "scheme": "lbseko360",
@@ -17,7 +17,7 @@
       }
     },
     "android": {
-      "versionCode": 5,
+      "versionCode": 10,
       "package": "com.eko.eko360mobile",
       "adaptiveIcon": {
         "foregroundImage": "./assets/images/adaptive-icon.png",
