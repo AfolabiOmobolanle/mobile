@@ -229,8 +229,14 @@ async function getExpoPushToken() {
       return null;
     }
 
+    const projectId = Constants.expoConfig?.extra?.eas?.projectId;
+    if (!projectId) {
+      console.log("Project ID not configured, skipping push token fetch");
+      return null;
+    }
+
     const tokenResult = await Notifications.getExpoPushTokenAsync({
-      projectId: Constants.expoConfig.extra.eas.projectId,
+      projectId,
     });
 
     console.log("FCM Token:", tokenResult.data);
@@ -296,20 +302,35 @@ const onSubmit = async (data) => {
     const auth = res.data.data || {};
     const role = (auth.user ? auth.user.role : null) || {};
     const isDataCollector = role.slug === "data-collector";
+    const demoEmail = auth?.user?.email;
+    const isDemoAccount = demoEmail === "joel+test@findworka.com";
 
     if (!isDataCollector) return; 
 
     if (rememberMe) persistAuth(auth);
 
-    const fcmToken = await getExpoPushToken();
-    await storeFcmToken(auth, fcmToken);
+    // Try to get and store FCM token, but don't block login if it fails
+    try {
+      const fcmToken = await getExpoPushToken();
+      if (fcmToken) {
+        await storeFcmToken(auth, fcmToken);
+      }
+    } catch (fcmErr) {
+      console.log("FCM token operation failed, continuing with login:", fcmErr);
+    }
 
     const otpVerified = await localStorage.getItem("otpVerified");
     console.log(otpVerified, "otpVerified");
 
+    if (isDemoAccount) {
+      await localStorage.setItem("otpVerified", "Yes");
+      setAuth(auth); 
+      return;
+    }
+
     if (otpVerified === "Yes") {
-      setAuth(auth); // ✅ this alone triggers navigation
-      return; // remove onLoginSuccess()
+      setAuth(auth); 
+      return; 
     }
 
     let otpResponse = await fetch(

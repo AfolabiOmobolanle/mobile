@@ -1,5 +1,6 @@
 import React, { useCallback, useState } from "react";
-import { SafeAreaView, ScrollView, StyleSheet } from "react-native";
+import { ScrollView, StyleSheet } from "react-native";
+import { SafeAreaView } from "react-native-safe-area-context";
 import { useApi } from "../../services/api";
 
 import Avartar from "../../components/common/avartar";

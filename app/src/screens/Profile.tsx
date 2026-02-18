@@ -1,6 +1,7 @@
 import React, { createRef, useCallback, useState } from "react";
 import { useForm } from "react-hook-form";
-import { SafeAreaView, StyleSheet, Text, TextInput, View } from "react-native";
+import { StyleSheet, Text, TextInput, View } from "react-native";
+import { SafeAreaView } from "react-native-safe-area-context";
 import Button from "../components/common/button";
 import SecondaryHeader from "../components/common/secondayHeader";
 import colors from "../config/colors";

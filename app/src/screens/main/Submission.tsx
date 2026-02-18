@@ -1,9 +1,9 @@
 import React, { useCallback, useEffect, useState } from "react";
 import moment from "moment";
+import { SafeAreaView } from "react-native-safe-area-context";
 
 import {
   Alert,
-  SafeAreaView,
   ScrollView,
   StyleSheet,
   Text,
