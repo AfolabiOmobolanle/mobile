@@ -132,17 +132,19 @@ const PreviewSurvey: React.FC<PreviewSurveyProps> = ({
     toggleStatusModalVisibility();
     navigation_.goBack();
     navigator.goBack();
-  }, [toggleStatusModalVisibility, navigator]);
+  }, [toggleStatusModalVisibility, navigation_, navigator]);
 
   const handleNext = () => {
+    toggleStatusModalVisibility();
     navigation_.navigate("main");
   };
 
   const handleReset = useCallback(() => {
+    toggleStatusModalVisibility();
     saveFieldValues([]);
     setEditedSurvey({});
     navigator.navigate("survey");
-  }, []);
+  }, [toggleStatusModalVisibility, saveFieldValues, setEditedSurvey]);
   // loader.hide();
 
   const saveDraft = async () => {

@@ -1,6 +1,6 @@
 import { Fontisto } from "@expo/vector-icons";
 import React, { ReactElement } from "react";
-import { Platform, StyleSheet, Text, View } from "react-native";
+import { Platform, StyleSheet, Text, View, TouchableOpacity } from "react-native";
 import colors from "../../config/colors";
 import font from "../../config/font";
 import { useStyleConfig } from "../../services/styles";
@@ -57,13 +57,13 @@ const SecondaryHeader: React.FC<SecondaryHeaderProps> = ({
   return (
     <View style={{ ...styles.container, ...style }}>
       <View style={styles.contentWrapper}>
-        <Fontisto
-          name="angle-left"
-          size={20}
-          style={styles.backIcon}
-          color={colors.primary}
-          onPress={() => onBack()}
-        />
+        <TouchableOpacity style={styles.backIcon} onPress={() => onBack()}>
+          <Fontisto
+            name="angle-left"
+            size={20}
+            color={colors.primary}
+          />
+        </TouchableOpacity>
         <Text style={styles.title} numberOfLines={1} ellipsizeMode="tail">
           {title}
         </Text>

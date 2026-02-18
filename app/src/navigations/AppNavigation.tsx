@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback, createRef } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import { Text } from "react-native";
 import { jwtDecode } from "jwt-decode";
 
@@ -14,7 +14,6 @@ import { navigate } from "../services/navigation";
 import ChangePasswordScreen from "../screens/ChangePassword";
 import FillSurveyScreen from "../screens/main/feed/fillSurvey";
 import PreviewSurveyScreen from "../screens/main/feed/previewSurvey";
-import { useSurveyFormContext } from "../context/surveyFormContext";
 
 const stack = createStackNavigator();
 
@@ -32,9 +31,6 @@ const authIsValid = (token: string) => {
 const AppNavigation = () => {
   const [checkedAuth, setCheckedAuth] = useState(false);
   const { auth, getPersistedAuth, setAuth } = useAuth();
-
-  const { editedSurvey } = useSurveyFormContext();
-  const hasActiveEditedSurvey = Object.keys(editedSurvey).length > 0;
 
   const setupAuth = useCallback(async () => {
     const persistedAuth: any = await getPersistedAuth();
@@ -80,12 +76,10 @@ const AppNavigation = () => {
         <>
           <stack.Screen name="main" component={MainNavigation} />
           <stack.Screen name="fillSurvey" component={FillSurveyScreen} />
-          {hasActiveEditedSurvey && (
-            <stack.Screen
-              name="previewSurvey"
-              component={PreviewSurveyScreen}
-            />
-          )}
+          <stack.Screen
+            name="previewSurvey"
+            component={PreviewSurveyScreen}
+          />
           <stack.Screen name="settings" component={SettingsScreen} />
           <stack.Screen name="profile" component={ProfileScreen} />
           <stack.Screen
